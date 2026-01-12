@@ -17,17 +17,14 @@ jobs:
         uses: actions/checkout@v5.0.0
 
       - name: Run AccuKnox Container Scanner
-        uses: accuknox/container-scan-action@v1.0.1
+        uses: accuknox/container-scan-action@v1.0.2
         
         with:
-          # GitHub secrets (uppercase)
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-
           # Container image
           image_name: "nginx"      # image name 
-
           # Optional flags
           soft_fail: true
           
