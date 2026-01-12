@@ -16,11 +16,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run AccuKnox DAST Scan
-        uses: accuknox/dast-scan-action@v1.0.1
+        uses: accuknox/dast-scan-action@v1.0.2
         with:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          accuknox_endpoint: "cspm.demo.accuknox.com"
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           target_url: "http://testphp.vulnweb.com/"
           severity_threshold: "HIGH"
           dast_scan_type: "baseline"
