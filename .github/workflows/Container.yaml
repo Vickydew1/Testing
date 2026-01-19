@@ -20,22 +20,13 @@ jobs:
         uses: Vickydew1/container-scan-action@main
         
         with:
-          # Required
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-
-          # Container image
           image_name: "nginx"
           tag: "latest"
-
-          # Scan configuration
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-
-          # Behavior flags
           soft_fail: true
           keep_results: true
-
-          # SBOM (optional)
           generate_sbom: true
           project_name: "Test1"
