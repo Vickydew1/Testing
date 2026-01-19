@@ -29,4 +29,4 @@ jobs:
           soft_fail: false
           keep_results: true
           generate_sbom: true
-          project_name: "Test2"
+          project_name: "test2"
