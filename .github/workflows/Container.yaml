@@ -30,3 +30,4 @@ jobs:
           keep_results: true
           generate_sbom: true
           project_name: "Test2"
+          
