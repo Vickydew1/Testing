@@ -22,7 +22,7 @@ jobs:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           soft_fail: "true"
-          severity: "CRITICAL"
+          # severity: "CRITICAL"
 
           
           # anthropic_api_key: ${{ secrets.anthropic_api_key }}
