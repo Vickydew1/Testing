@@ -24,6 +24,5 @@ jobs:
           soft_fail: "true"
           # anthropic_api_key: ${{ secrets.anthropic_api_key }}
           # accuknox_ai_analysis: true
-          fail_severity: "critical"
           
           
