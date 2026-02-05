@@ -23,10 +23,10 @@ jobs:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-          image_name: "nginx"
+          image_name: "web-dvwa"
           tag: "latest"
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-          # soft_fail: false
+          soft_fail: true
           keep_results: true
-          # generate_sbom: true
-          # project_name: "test2"
+          generate_sbom: true
+          project_name: "test2"
