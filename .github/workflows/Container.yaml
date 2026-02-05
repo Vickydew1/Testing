@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4.0.0
 
       - name: Run AccuKnox Container Scanner
-        uses: accuknox/container-scan-action@lastest
+        uses: accuknox/container-scan-action@latest
       
         with:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
