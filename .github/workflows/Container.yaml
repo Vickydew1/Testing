@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4.0.0
 
       - name: Run AccuKnox Container Scanner
-        uses: accuknox/container-scan-action@latest
+        uses: Vickydew1/container-scan-action@SBOM
       
         with:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
@@ -28,5 +28,5 @@ jobs:
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
           soft_fail: true
           keep_results: true
-          # generate_sbom: true
-          # project_name: "Test"
+          generate_sbom: true
+          project_name: "Test"
