@@ -28,6 +28,6 @@ jobs:
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
           soft_fail: true
           keep_results: true
-          generate_sbom: true
-          project_name: "test2"
+          # generate_sbom: true
+          # project_name: "test2"
           
