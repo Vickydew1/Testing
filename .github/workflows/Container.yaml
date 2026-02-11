@@ -27,7 +27,7 @@ jobs:
           tag: "latest"
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
           soft_fail: true
-          keep_results: true
+          keep_results: false
           generate_sbom: true
           project_name: "Project Test"
           
