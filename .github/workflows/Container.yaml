@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4.0.0
 
       - name: Run AccuKnox Container Scanner
-        uses: Vickydew1/container-scan-action@Fixes
+        uses: Vickydew1/container-scan-action@Docker
       
         with:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
@@ -29,4 +29,5 @@ jobs:
           soft_fail: true
           upload_results: true
           generate_sbom: true
+          dockerfile_context: Dockerfile
           project_name: "Project Test"
