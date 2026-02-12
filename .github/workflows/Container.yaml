@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4.0.0
 
       - name: Run AccuKnox Container Scanner
-        uses: Vickydew1/container-scan-action@fixture
+        uses: Vickydew1/container-scan-action@Fixes
       
         with:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
@@ -27,7 +27,6 @@ jobs:
           tag: "latest"
           severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
           soft_fail: true
-          # upload_results: true
+          upload_results: true
           generate_sbom: true
           project_name: "Project Test"
-          
