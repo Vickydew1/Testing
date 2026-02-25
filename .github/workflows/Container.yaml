@@ -29,5 +29,5 @@ jobs:
           soft_fail: true
           upload_results: true
           generate_sbom: true
-          dockerfile_context: Dockerfile
+          # dockerfile_context: Dockerfile
           project_name: "Project Test"
