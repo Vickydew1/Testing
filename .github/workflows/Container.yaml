@@ -30,4 +30,4 @@ jobs:
           upload_results: true
           generate_sbom: true
           dockerfile_context: Dockerfile
-          project_name: "Project Vuln"
+          project_name: "vulnerability"
