@@ -1,17 +1,6 @@
-name: Deploy on ECR Push (ASPM Scan)
+name: ECR Image Scan (ASPM)
 
 on:
-  # ✅ Manual trigger (for testing)
-  workflow_dispatch:
-    inputs:
-      image_url:
-        description: "ECR Image URL"
-        required: true
-      region:
-        description: "AWS Region"
-        required: true
-
-  # ✅ Existing event trigger (keep for later)
   repository_dispatch:
     types: [ecr-image-push]
 
@@ -21,58 +10,65 @@ jobs:
     timeout-minutes: 40
 
     concurrency:
-      group: ecr-scan-${{ github.event.client_payload.image_digest || github.run_id }}
+      group: ecr-scan-${{ github.event.client_payload.image_digest }}
       cancel-in-progress: true
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      # 🔐 Configure AWS
+      - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.region || github.event.client_payload.region }}
+          aws-region:            ${{ github.event.client_payload.region }}
 
+      # 🔑 Login to ECR
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Resolve image input
-        id: vars
+      # 📦 Validate payload
+      - name: Validate payload
         run: |
-          IMAGE="${{ github.event.inputs.image_url || github.event.client_payload.image_url }}"
-
-          if [ -z "$IMAGE" ]; then
+          if [ -z "${{ github.event.client_payload.image_url }}" ]; then
             echo "❌ Missing image_url"
             exit 1
           fi
 
-          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-
-      - name: Print details
+      # 📊 Print details
+      - name: Print ECR details
         run: |
-          echo "Image URL : $IMAGE"
-          echo "Region    : ${{ github.event.inputs.region || github.event.client_payload.region }}"
+          echo "Repository : ${{ github.event.client_payload.repository_name }}"
+          echo "Tag        : ${{ github.event.client_payload.image_tag }}"
+          echo "Digest     : ${{ github.event.client_payload.image_digest }}"
+          echo "Image URL  : ${{ github.event.client_payload.image_url }}"
 
-      - name: Pull image
+      # 📥 Pull image
+      - name: Pull image from ECR
         run: |
-          docker pull $IMAGE
+          docker pull ${{ github.event.client_payload.image_url }}
 
+      # ⬇️ Download ASPM Scanner
       - name: Download ASPM Scanner
         run: |
           curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.0/accuknox-aspm-scanner -o accuknox-aspm-scanner
           chmod +x accuknox-aspm-scanner
 
-      - name: Install scanner tools
+      # 🛠 Install scanner
+      - name: Install scanner
         run: |
           ./accuknox-aspm-scanner tool install --type container
 
-      - name: Run AccuKnox Container Scan
+      # 🔍 Run scan
+      - name: Scan image
         run: |
           set -e
 
-          echo "🔍 Scanning image: $IMAGE"
+          IMAGE="${{ github.event.client_payload.image_url }}"
+
+          echo "🔍 Scanning $IMAGE"
 
           touch results.json
           chmod 666 results.json
