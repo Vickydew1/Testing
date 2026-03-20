@@ -26,8 +26,12 @@ jobs:
           aws-region:            ${{ github.event.client_payload.region }}
 
       # 🔑 Login to ECR
-      - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to ECR (manual)
+        run: |
+          aws ecr get-login-password --region ${{ github.event.client_payload.region }} \
+          | docker login \
+            --username AWS \
+            --password-stdin $(echo "${{ github.event.client_payload.image_url }}" | cut -d'/' -f1)
 
       # 📦 Validate payload
       - name: Validate payload
