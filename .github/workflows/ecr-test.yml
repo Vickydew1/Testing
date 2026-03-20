@@ -1,0 +1,84 @@
+name: Deploy on ECR Push (ASPM Scan)
+
+on:
+  # ✅ Manual trigger (for testing)
+  workflow_dispatch:
+    inputs:
+      image_url:
+        description: "ECR Image URL"
+        required: true
+      region:
+        description: "AWS Region"
+        required: true
+
+  # ✅ Existing event trigger (keep for later)
+  repository_dispatch:
+    types: [ecr-image-push]
+
+jobs:
+  container-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    concurrency:
+      group: ecr-scan-${{ github.event.client_payload.image_digest || github.run_id }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.region || github.event.client_payload.region }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Resolve image input
+        id: vars
+        run: |
+          IMAGE="${{ github.event.inputs.image_url || github.event.client_payload.image_url }}"
+
+          if [ -z "$IMAGE" ]; then
+            echo "❌ Missing image_url"
+            exit 1
+          fi
+
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Print details
+        run: |
+          echo "Image URL : $IMAGE"
+          echo "Region    : ${{ github.event.inputs.region || github.event.client_payload.region }}"
+
+      - name: Pull image
+        run: |
+          docker pull $IMAGE
+
+      - name: Download ASPM Scanner
+        run: |
+          curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.0/accuknox-aspm-scanner -o accuknox-aspm-scanner
+          chmod +x accuknox-aspm-scanner
+
+      - name: Install scanner tools
+        run: |
+          ./accuknox-aspm-scanner tool install --type container
+
+      - name: Run AccuKnox Container Scan
+        run: |
+          set -e
+
+          echo "🔍 Scanning image: $IMAGE"
+
+          touch results.json
+          chmod 666 results.json
+
+          ./accuknox-aspm-scanner scan \
+            --keep-results \
+            container \
+            --command "image $IMAGE --severity CRITICAL,HIGH" \
+            --container-mode
