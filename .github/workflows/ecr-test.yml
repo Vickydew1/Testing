@@ -9,10 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
-    concurrency:
-      group: ecr-scan-${{ github.event.client_payload.image_digest }}
-      cancel-in-progress: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,13 +19,6 @@ jobs:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ github.event.client_payload.region }}
-
-      # - name: Login to ECR (manual)
-      #   run: |
-      #     aws ecr get-login-password --region ${{ github.event.client_payload.region }} \
-      #     | docker login \
-      #       --username AWS \
-      #       --password-stdin $(echo "${{ github.event.client_payload.image_url }}" | cut -d'/' -f1)
 
       - name: Login to ECR
         id: login-ecr
