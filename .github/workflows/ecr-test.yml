@@ -17,7 +17,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 🔐 Configure AWS
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -25,23 +24,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ github.event.client_payload.region }}
 
-      # 🔑 Login to ECR
-      - name: Login to ECR (manual)
-        run: |
-          aws ecr get-login-password --region ${{ github.event.client_payload.region }} \
-          | docker login \
-            --username AWS \
-            --password-stdin $(echo "${{ github.event.client_payload.image_url }}" | cut -d'/' -f1)
+      # - name: Login to ECR (manual)
+      #   run: |
+      #     aws ecr get-login-password --region ${{ github.event.client_payload.region }} \
+      #     | docker login \
+      #       --username AWS \
+      #       --password-stdin $(echo "${{ github.event.client_payload.image_url }}" | cut -d'/' -f1)
 
-      # 📦 Validate payload
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
       - name: Validate payload
         run: |
           if [ -z "${{ github.event.client_payload.image_url }}" ]; then
-            echo "❌ Missing image_url"
+            echo "Missing image_url"
             exit 1
           fi
 
-      # 📊 Print details
       - name: Print ECR details
         run: |
           echo "Repository : ${{ github.event.client_payload.repository_name }}"
@@ -49,23 +49,19 @@ jobs:
           echo "Digest     : ${{ github.event.client_payload.image_digest }}"
           echo "Image URL  : ${{ github.event.client_payload.image_url }}"
 
-      # 📥 Pull image (optional but good practice)
       - name: Pull image from ECR
         run: |
           docker pull ${{ github.event.client_payload.image_url }}
 
-      # ⬇️ Download ASPM Scanner
       - name: Download ASPM Scanner
         run: |
           curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.0/accuknox-aspm-scanner -o accuknox-aspm-scanner
           chmod +x accuknox-aspm-scanner
 
-      # 🛠 Install scanner
       - name: Install scanner
         run: |
           ./accuknox-aspm-scanner tool install --type container
 
-      # 🔍 Run scan
       - name: Scan image
         env:
           ACCUKNOX_TOKEN: ${{ secrets.ACCUKNOX_TOKEN }}
@@ -76,7 +72,7 @@ jobs:
 
           IMAGE="${{ github.event.client_payload.image_url }}"
 
-          echo "🔍 Scanning $IMAGE"
+          echo "Scanning $IMAGE"
 
           ./accuknox-aspm-scanner scan \
             --softfail \
@@ -84,12 +80,11 @@ jobs:
             --command "image $IMAGE --severity CRITICAL,HIGH" \
             --container-mode
 
-      # ✅ Success message
       - name: Scan passed
         if: success()
         run: echo "✅ Scan completed successfully!"
 
-      # ❌ Failure message
+    
       - name: Scan failed
         if: failure()
         run: echo "❌ Scan failed!"
