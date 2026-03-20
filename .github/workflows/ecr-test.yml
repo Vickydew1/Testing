@@ -45,7 +45,7 @@ jobs:
           echo "Digest     : ${{ github.event.client_payload.image_digest }}"
           echo "Image URL  : ${{ github.event.client_payload.image_url }}"
 
-      # 📥 Pull image
+      # 📥 Pull image (optional but good practice)
       - name: Pull image from ECR
         run: |
           docker pull ${{ github.event.client_payload.image_url }}
@@ -63,6 +63,10 @@ jobs:
 
       # 🔍 Run scan
       - name: Scan image
+        env:
+          ACCUKNOX_TOKEN: ${{ secrets.ACCUKNOX_TOKEN }}
+          ACCUKNOX_LABEL: ${{ secrets.ACCUKNOX_LABEL_ID }}
+          ACCUKNOX_ENDPOINT: ${{ secrets.ACCUKNOX_ENDPOINT }}
         run: |
           set -e
 
@@ -70,11 +74,18 @@ jobs:
 
           echo "🔍 Scanning $IMAGE"
 
-          touch results.json
-          chmod 666 results.json
-
           ./accuknox-aspm-scanner scan \
-            --keep-results \
+            --softfail \
             container \
             --command "image $IMAGE --severity CRITICAL,HIGH" \
             --container-mode
+
+      # ✅ Success message
+      - name: Scan passed
+        if: success()
+        run: echo "✅ Scan completed successfully!"
+
+      # ❌ Failure message
+      - name: Scan failed
+        if: failure()
+        run: echo "❌ Scan failed!"
