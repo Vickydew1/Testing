@@ -69,7 +69,7 @@ jobs:
       - name: Scan image
         env:
           ACCUKNOX_TOKEN: ${{ secrets.ACCUKNOX_TOKEN }}
-          ACCUKNOX_LABEL: ${{ secrets.ACCUKNOX_LABEL_ID }}
+          ACCUKNOX_LABEL: ${{ secrets.ACCUKNOX_LABEL }}
           ACCUKNOX_ENDPOINT: ${{ secrets.ACCUKNOX_ENDPOINT }}
         run: |
           set -e
