@@ -3,7 +3,7 @@
     "provider": "openai",
     "name": "qwen/qwen3.5-9b",
     "api_base": "https://openrouter.ai/api",
-    "api_key": "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"
+    "api_key": "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"
   },
   "concurrency": 2,
   "stage_timeout": 300,
