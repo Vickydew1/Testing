@@ -11,6 +11,8 @@ on:
 jobs:
   sast-scan:
     runs-on: ubuntu-latest
+    env:
+      OPEN_KEY: ${{ secrets.OPEN_KEY }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
