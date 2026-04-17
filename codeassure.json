@@ -1,0 +1,12 @@
+{
+  "model": {
+    "provider": "openai-compatible",
+    "name": "your-model-name",
+    "api_base": "http://localhost:5000",
+    "api_key": "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",    //YOUR_API_KEY_ENV_VAR
+    "tool_calling": true
+  },
+  "concurrency": 4,
+  "stage_timeout": 120,
+  "finding_timeout": 300
+}
