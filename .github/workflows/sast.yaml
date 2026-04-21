@@ -11,14 +11,12 @@ on:
 jobs:
   sast-scan:
     runs-on: ubuntu-latest
-    env:
-      OPEN_KEY: ${{ secrets.OPEN_KEY }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Run SAST Scan with AccuKnox
-        uses: Eshrath027/sast-scan-opengrep-action@MK-1945
+        uses: accuknox/sast-scan-opengrep-action@latest
         with:
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
