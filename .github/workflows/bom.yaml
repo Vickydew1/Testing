@@ -37,7 +37,7 @@ jobs:
       # - name: Build image
       #   run: docker build -t myapp:${{ github.sha }} .
 
-      - uses: accuknox/xbom-scan-action@0.1
+      - uses: accuknox/XBOM-actionn@0.1
         with:
           bom-type:            sbom
           path:                "."
