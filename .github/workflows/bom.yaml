@@ -1,0 +1,50 @@
+name: AccuKnox xBOM Scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      bom-type:
+        description: "BOM type"
+        required: true
+        default: sbom
+        type: choice
+        options: [sbom, cbom, aibom]
+      image:
+        description: "Image to scan (leave empty to scan filesystem)"
+        required: false
+        default: ""
+      aibom-model:
+        description: "HuggingFace model (required when bom-type=aibom)"
+        required: false
+        default: ""
+      artifact-classifier:
+        description: "project_classifier in BOM (e.g. container, application)"
+        required: false
+        default: "container"
+
+jobs:
+  xbom-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # If scanning an image, build it here so it shares the same Docker daemon
+      # - name: Build image
+      #   run: docker build -t myapp:${{ github.sha }} .
+
+      - uses: accuknox/xbom-scan-action@0.1
+        with:
+          bom-type:            sbom
+          path:                "."
+          # image:               ${{ inputs.image || '' }}
+          # aibom-model:         ${{ inputs.aibom-model || '' }}
+          token:               ${{ secrets.ACCUKNOX_TOKEN }}
+          endpoint:            ${{ secrets.ACCUKNOX_ENDPOINT }}
+          label:               ${{ secrets.ACCUKNOX_LABEL }}
+          project-name:        Action
+          artifact-classifier: Data
