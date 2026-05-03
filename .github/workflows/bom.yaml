@@ -39,10 +39,10 @@ jobs:
 
       - uses: accuknox/XBOM-action@0.3
         with:
-          bom-type:            sbom
+          bom-type:            aibom
           path:                "."
           # image:               ${{ inputs.image || '' }}
-          # aibom-model:         ${{ inputs.aibom-model || '' }}
+          aibom-model:         meta-llama/Llama-2-7b
           token:               ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:            ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:               ${{ secrets.ACCUKNOX_LABEL }}
