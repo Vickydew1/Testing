@@ -15,7 +15,7 @@ jobs:
       id: build
       run: |
         IMAGE="myapp:${{ github.sha }}"
-        docker build -t "$IMAGE" .
+        docker build -t "$IMAGE" -f Dockerfile .   # ← match your exact filename
         echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
     
     - uses: accuknox/xbom-action@0.4
