@@ -47,4 +47,4 @@ jobs:
           endpoint:            ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:               ${{ secrets.ACCUKNOX_LABEL }}
           project-name:        Action
-          artifact-classifier: Data
+          artifact-classifier: application
