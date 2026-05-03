@@ -42,9 +42,9 @@ jobs:
           bom-type:            aibom
           path:                "."
           # image:               ${{ inputs.image || '' }}
-          aibom-model:         meta-llama/Llama-2-7b
+          aibom-model:         deepseek-ai/DeepSeek-V4-Pro
           token:               ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:            ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:               ${{ secrets.ACCUKNOX_LABEL }}
           project-name:        Action
-          artifact-classifier: application
+          project-classifier: application
