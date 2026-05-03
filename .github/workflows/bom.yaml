@@ -18,7 +18,7 @@ jobs:
         docker build -t "$IMAGE" .
         echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
     
-    - uses: accuknox/XBOM-action@0.x
+    - uses: accuknox/xbom-action@0.4
       with:
         bom-type:           cbom
         image:              ${{ steps.build.outputs.image }}
