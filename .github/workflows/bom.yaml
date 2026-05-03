@@ -21,10 +21,6 @@ on:
         description: "HuggingFace model (required when bom-type=aibom)"
         required: false
         default: ""
-      artifact-classifier:
-        description: "project_classifier in BOM (e.g. container, application)"
-        required: false
-        default: "container"
 
 jobs:
   xbom-scan:
