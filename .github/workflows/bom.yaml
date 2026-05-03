@@ -11,18 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      # If scanning an image, build it here so it shares the same Docker daemon
-      # - name: Build image
-      #   run: docker build -t myapp:${{ github.sha }} .
-
-      - uses: accuknox/xbom-action@0.4
-        with:
-          bom-type:           cbom
-          path:               "."
-          token:              ${{ secrets.ACCUKNOX_TOKEN }}
-          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
-          label:              ${{ secrets.ACCUKNOX_LABEL }}
-          project-name:        Action
-          project-classifier: application
+    - name: Build image
+      id: build
+      run: |
+        IMAGE="myapp:${{ github.sha }}"
+        docker build -t "$IMAGE" .
+        echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+    
+    - uses: accuknox/XBOM-action@0.x
+      with:
+        bom-type:           cbom
+        image:              ${{ steps.build.outputs.image }}
+        token:              ${{ secrets.ACCUKNOX_TOKEN }}
+        endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
+        label:              ${{ secrets.ACCUKNOX_LABEL }}
+        project-name:       Action
+        project-classifier: application
