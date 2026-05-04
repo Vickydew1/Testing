@@ -7,18 +7,19 @@ on:
     branches: [main, master]
 
 jobs:
-  xbom-aibom:
+  xbom-scan:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
 
-      - uses: accuknox/xbom-action@1.0
-        with:
-          bom-type:           aibom
-          aibom-model:        deepseek-ai/DeepSeek-V4-Pro
-          token:              ${{ secrets.ACCUKNOX_TOKEN }}
-          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
-          label:              ${{ secrets.ACCUKNOX_LABEL }}
-          project-name:       Action
-          project-classifier: application
+    - uses: actions/checkout@v4
+    
+    - uses: accuknox/xbom-action@1.0
+      with:
+        bom-type:           sbom
+        path:               "."
+        token:              ${{ secrets.ACCUKNOX_TOKEN }}
+        endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
+        label:              ${{ secrets.ACCUKNOX_LABEL }}
+        project-name:       Action
+        project-classifier: application
