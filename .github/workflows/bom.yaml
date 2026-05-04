@@ -7,25 +7,18 @@ on:
     branches: [main, master]
 
 jobs:
-  xbom-cbom-image:
+  xbom-aibom:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image
-        id: build
-        run: |
-          IMAGE="myapp:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-
-      - uses: accuknox/xbom-action@1.0
+      - uses: accuknox/xbom-scan-action@v1.0
         with:
-          bom-type:           cbom
-          image:              ${{ steps.build.outputs.image }}
+          bom-type:           aibom
+          aibom-model:        google-bert/bert-base-uncased
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
-          project-name:       my-project
-          project-classifier: container
+          project-name:       Action
+          project-classifier: application
