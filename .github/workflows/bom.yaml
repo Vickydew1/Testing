@@ -16,7 +16,7 @@ jobs:
     
     - uses: accuknox/xbom-action@1.0
       with:
-        bom-type:           cbom
+        bom-type:           sbom
         path:               "."
         token:              ${{ secrets.ACCUKNOX_TOKEN }}
         endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
