@@ -13,10 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: accuknox/xbom-scan-action@v1.0
+      - uses: accuknox/xbom-action@1.0
         with:
           bom-type:           aibom
-          aibom-model:        google-bert/bert-base-uncased
+          aibom-model:        deepseek-ai/DeepSeek-V4-Pro
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
