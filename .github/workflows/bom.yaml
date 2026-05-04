@@ -7,19 +7,26 @@ on:
     branches: [main, master]
 
 jobs:
-  xbom-scan:
+  xbom-cbom-image:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
 
-    - uses: actions/checkout@v4
-    
-    - uses: accuknox/xbom-action@1.0
-      with:
-        bom-type:           sbom
-        path:               "."
-        token:              ${{ secrets.ACCUKNOX_TOKEN }}
-        endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
-        label:              ${{ secrets.ACCUKNOX_LABEL }}
-        project-name:       Action
-        project-classifier: application
+      - name: Build image
+        id: build
+        run: |
+          IMAGE="myapp:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - uses: accuknox/xbom-scan-action@v1.0
+        with:
+          bom-type:           cbom
+          image:              ${{ steps.build.outputs.image }}
+          cbom-plugins:       certificates, keys
+          token:              ${{ secrets.ACCUKNOX_TOKEN }}
+          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
+          label:              ${{ secrets.ACCUKNOX_LABEL }}
+          project-name:       my-project
+          project-classifier: container
