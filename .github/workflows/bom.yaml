@@ -24,7 +24,6 @@ jobs:
         with:
           bom-type:           cbom
           image:              ${{ steps.build.outputs.image }}
-          cbom-plugins:       certificates, keys
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
