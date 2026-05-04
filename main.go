@@ -1,12 +1,15 @@
 package main
 
 import (
-	"crypto/sha256"
 	"fmt"
+
+	"cbom-test/crypto"
 )
 
 func main() {
-	data := "hello-accuknox"
-	hash := sha256.Sum256([]byte(data))
-	fmt.Printf("SHA256: %x\n", hash)
+	fmt.Println("CBOM Test App")
+
+	crypto.HashData("hello-accuknox")
+	crypto.UseTLS()
+	crypto.GenerateRSA()
 }
