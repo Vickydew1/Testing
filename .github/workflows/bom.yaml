@@ -13,17 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image
-        id: build
-        run: |
-          IMAGE="myapp:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-
-      - uses: accuknox/xbom-action@1.0
+      - uses: Vickydew1/xbom-action@main
         with:
-          bom-type:           cbom
-          image:              ${{ steps.build.outputs.image }}
+          bom-type:           sbom
+          path:               "."
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
