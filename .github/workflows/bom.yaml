@@ -7,9 +7,6 @@ on:
   pull_request:
     branches: [main, master]
 
-  release:
-    types: [published]
-
 jobs:
   xbom-cbom-image:
     runs-on: ubuntu-latest
