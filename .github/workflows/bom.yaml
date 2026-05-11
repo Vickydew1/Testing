@@ -22,4 +22,3 @@ jobs:
           label: ${{ secrets.ACCUKNOX_LABEL }}
           project-name: Action
           project-classifier: application
-
