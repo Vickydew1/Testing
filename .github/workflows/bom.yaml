@@ -1,20 +1,16 @@
 name: AccuKnox xBOM Scan
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
 
 jobs:
-  xbom-cbom-image:
+  xbom:
     runs-on: ubuntu-latest
-
-    permissions:
-      actions: read
-      contents: write
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run AccuKnox xBOM Scan
         uses: Vickydew1/xbom-action@main
@@ -26,18 +22,3 @@ jobs:
           label: ${{ secrets.ACCUKNOX_LABEL }}
           project-name: Action
           project-classifier: application
-
-      - name: Download Workflow Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Verify Downloaded Files
-        run: |
-          echo "=== DOWNLOADED ARTIFACTS ==="
-          find artifacts -type f
-
-      - name: Upload SBOM to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**/*.json
