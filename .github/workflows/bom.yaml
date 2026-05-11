@@ -4,9 +4,6 @@ on:
   push:
     branches: [main, master]
 
-  pull_request:
-    branches: [main, master]
-
 jobs:
   xbom-cbom-image:
     runs-on: ubuntu-latest
@@ -16,7 +13,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - uses: Vickydew1/xbom-action@main
         with:
@@ -28,8 +25,10 @@ jobs:
           project-name: Action
           project-classifier: application
 
+      - name: List generated files
+        run: find . -name "*.json"
+
       - name: Publish BOM to GitHub Release
-        if: github.event_name == 'release'
         uses: anchore/sbom-action/publish-sbom@v0
         with:
           sbom-artifact-match: ".*\\.json$"
