@@ -25,6 +25,15 @@ jobs:
           project-name: Action
           project-classifier: application
 
-      - uses: anchore/sbom-action/publish-sbom@v0
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Verify artifacts
+        run: find artifacts -type f
+
+      - name: Publish SBOM to GitHub Release
+        uses: anchore/sbom-action/publish-sbom@v0
         with:
           sbom-artifact-match: ".*\\.json$"
