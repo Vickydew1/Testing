@@ -13,9 +13,11 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: Vickydew1/xbom-action@main
+      - name: Run AccuKnox xBOM Scan
+        uses: Vickydew1/xbom-action@main
         with:
           bom-type: sbom
           path: "."
@@ -25,15 +27,17 @@ jobs:
           project-name: Action
           project-classifier: application
 
-      - name: Download workflow artifacts
+      - name: Download Workflow Artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Verify artifacts
-        run: find artifacts -type f
+      - name: Verify Downloaded Files
+        run: |
+          echo "=== DOWNLOADED ARTIFACTS ==="
+          find artifacts -type f
 
-      - name: Publish SBOM to GitHub Release
-        uses: anchore/sbom-action/publish-sbom@v0
+      - name: Upload SBOM to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          sbom-artifact-match: ".*\\.json$"
+          files: artifacts/**/*.json
