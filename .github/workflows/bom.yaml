@@ -1,24 +1,25 @@
-name: AccuKnox xBOM Scan
+name: Test AIBOM Bedrock
 
 on:
   push:
     branches: [main]
 
 jobs:
-  xbom:
+  aibom-bedrock:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Run AccuKnox xBOM Scan
+      - name: Generate AIBOM from AWS Bedrock
         uses: Vickydew1/xbom-action@main
         with:
-          bom-type: sbom
-          path: "."
-          token: ${{ secrets.ACCUKNOX_TOKEN }}
-          endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-          label: ${{ secrets.ACCUKNOX_LABEL }}
-          project-name: Action
-          project-classifier: application
+          bom-type:              aibom
+          aibom-source:          bedrock
+          aws-region:            us-east-1
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          token:                 ${{ secrets.ACCUKNOX_TOKEN }}
+          endpoint:              ${{ secrets.ACCUKNOX_ENDPOINT }}
+          label:                 ${{ secrets.ACCUKNOX_LABEL }}
+          project-name:          Action
+          project-classifier:    application
