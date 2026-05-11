@@ -3,22 +3,36 @@ name: AccuKnox xBOM Scan
 on:
   push:
     branches: [main, master]
+
   pull_request:
     branches: [main, master]
+
+  release:
+    types: [published]
 
 jobs:
   xbom-cbom-image:
     runs-on: ubuntu-latest
 
+    permissions:
+      actions: read
+      contents: write
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@latest
 
       - uses: Vickydew1/xbom-action@main
         with:
-          bom-type:           sbom
-          path:               "."
-          token:              ${{ secrets.ACCUKNOX_TOKEN }}
-          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
-          label:              ${{ secrets.ACCUKNOX_LABEL }}
-          project-name:       Action
+          bom-type: sbom
+          path: "."
+          token: ${{ secrets.ACCUKNOX_TOKEN }}
+          endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          label: ${{ secrets.ACCUKNOX_LABEL }}
+          project-name: Action
           project-classifier: application
+
+      - name: Publish BOM to GitHub Release
+        if: github.event_name == 'release'
+        uses: anchore/sbom-action/publish-sbom@v0
+        with:
+          sbom-artifact-match: ".*\\.json$"
