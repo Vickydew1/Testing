@@ -1,8 +1,8 @@
 name: AccuKnox xBOM Scan
 
 on:
-  push:
-    branches: [main, master]
+  release:
+    types: [published]
 
 jobs:
   xbom-cbom-image:
@@ -25,10 +25,6 @@ jobs:
           project-name: Action
           project-classifier: application
 
-      - name: List generated files
-        run: find . -name "*.json"
-
-      - name: Publish BOM to GitHub Release
-        uses: anchore/sbom-action/publish-sbom@v0
+      - uses: anchore/sbom-action/publish-sbom@v0
         with:
           sbom-artifact-match: ".*\\.json$"
