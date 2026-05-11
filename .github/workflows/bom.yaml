@@ -19,7 +19,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@latest
+      - uses: actions/checkout@v6
 
       - uses: Vickydew1/xbom-action@main
         with:
