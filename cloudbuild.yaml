@@ -84,6 +84,11 @@ steps:
         apt-get update -qq
         apt-get install -y -qq --no-install-recommends ca-certificates
 
+        # Install the SAST tool (Opengrep) locally
+        # Required because we are not using --container-mode
+        echo "Installing SAST tool (Opengrep)..."
+        /workspace/accuknox-aspm-scanner tool install --type sast
+
         # Resolve soft-fail flag
         SOFT_FAIL=$(echo "$$SOFT_FAIL" | tr -d ' \t\r\n')
         SOFT_FAIL_ARG=""
