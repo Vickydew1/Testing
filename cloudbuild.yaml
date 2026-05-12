@@ -1,20 +1,4 @@
-# =============================================================================
 # AccuKnox IaC (Checkov) — Google Cloud Build Pipeline
-# Scans the repo for Infrastructure-as-Code misconfigurations and uploads
-# results to the AccuKnox CSPM panel.
-# -----------------------------------------------------------------------------
-# Pipeline (3 steps):
-#   1. validate-inputs   — fail fast if required substitutions are empty
-#   2. download-scanner  — fetch the AccuKnox ASPM scanner CLI to /workspace
-#   3. run-iac-scan      — install Checkov locally, run scan, upload to CSPM
-# -----------------------------------------------------------------------------
-# Base image is ubuntu:24.04 (glibc 2.39) because the scanner needs GLIBC_2.38+.
-# --container-mode is intentionally NOT used, so no docker dependency.
-# -----------------------------------------------------------------------------
-# Cloud Build escaping rules used here:
-#   ${_FOO}, ${BUILD_ID}, ${BRANCH_NAME}, ${PROJECT_ID}  -> resolved by Cloud Build
-#   $$FOO, $${FOO}                                        -> passed through to bash
-# =============================================================================
 
 steps:
 
