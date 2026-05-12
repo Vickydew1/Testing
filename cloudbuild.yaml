@@ -1,21 +1,6 @@
-# =============================================================================
+
 # AccuKnox DAST (OWASP ZAP) — Google Cloud Build Pipeline
-# Runs a baseline DAST scan against a live target URL and uploads results
-# to the AccuKnox CSPM panel.
-# -----------------------------------------------------------------------------
-# Pipeline (3 steps):
-#   1. validate-inputs   — fail fast if required substitutions are empty
-#   2. download-scanner  — fetch the AccuKnox ASPM scanner CLI to /workspace
-#   3. run-dast-scan     — install docker, run ZAP container-mode scan, upload
-# -----------------------------------------------------------------------------
-# Only AccuKnox credentials come from trigger substitutions.
-# DAST-specific config (target URL, ZAP script, severity, soft-fail) is set
-# inline in step 3 — edit those values directly when you need to change them.
-# -----------------------------------------------------------------------------
-# Cloud Build escaping rules used here:
-#   ${_FOO}, ${BUILD_ID}, ${PROJECT_ID}  -> resolved by Cloud Build
-#   $$FOO, $${FOO}                       -> passed through to bash
-# =============================================================================
+
 
 steps:
 
@@ -80,7 +65,7 @@ steps:
         # DAST-specific configuration — edit these values as needed
         # ====================================================================
         TARGET_URL="https://help.accuknox.com/"
-        ZAP_SCAN_SCRIPT="zap-baseline.py"     # zap-baseline.py | zap-full-scan.py 
+        ZAP_SCAN_SCRIPT="zap-baseline.py"     # zap-baseline.py | zap-full-scan.py | zap-api-scan.py
         SEVERITY_THRESHOLD=""                 # leave empty, or set HIGH / MEDIUM / LOW
         SOFT_FAIL="true"                      # true to keep pipeline green on findings
         # ====================================================================
@@ -89,6 +74,10 @@ steps:
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq
         apt-get install -y -qq --no-install-recommends ca-certificates docker.io
+
+        # Pin the Docker client API version to match the Cloud Build host daemon.
+        # Ubuntu 24.04 ships Docker 29.x (API 1.52) but Cloud Build runs Docker 20.10 (API 1.41).
+        export DOCKER_API_VERSION=1.41
 
         # Validate the target URL is set
         if [ -z "$$TARGET_URL" ]; then
