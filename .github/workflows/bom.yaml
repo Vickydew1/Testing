@@ -1,11 +1,11 @@
-name: Test SBOM Image
+name: Test CBOM Image
 
 on:
   push:
     branches: [main]
 
 jobs:
-  sbom-image:
+  cbom-image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -17,14 +17,20 @@ jobs:
           docker build -t "$IMAGE" .
           echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
 
-      - name: Generate SBOM from image
+      - name: Generate CBOM from image
+        id: cbom
         uses: Vickydew1/xbom-action@main
         with:
-          bom-type:           sbom
+          bom-type:           cbom
           image:              ${{ steps.build.outputs.image }}
+          cbom-plugins:       certificates, keys
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
           project-name:       Action
           project-classifier: application
 
+      - name: Print outputs
+        run: |
+          echo "BOM file: ${{ steps.cbom.outputs.bom-file }}"
+          echo "Upload status: ${{ steps.cbom.outputs.upload-status }}"
