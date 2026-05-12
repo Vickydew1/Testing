@@ -64,7 +64,7 @@ steps:
         # Secret-specific configuration — edit these values as needed
         # ====================================================================
         SOFT_FAIL="true"                  # true to keep pipeline green on findings
-        UNSHALLOW_HISTORY="false"         # true to scan full git history (slower)
+        UNSHALLOW_HISTORY="true"         # true to scan full git history (slower)
         SCAN_PATH="."                     # path within /workspace to scan
         # ====================================================================
 
