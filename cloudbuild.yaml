@@ -2,6 +2,10 @@
 # AccuKnox SAST (Opengrep) — Google Cloud Build Pipeline
 # Mirrors the accuknox/sast-scan-action GitHub Action.
 # Scans the repo with Opengrep and uploads results to the AccuKnox CSPM panel.
+# -----------------------------------------------------------------------------
+# Cloud Build escaping rules used here:
+#   ${_FOO}, ${BUILD_ID}, ${COMMIT_SHA}, ${PROJECT_ID}  -> resolved by Cloud Build
+#   $$FOO, $${FOO}                                       -> passed through to bash
 # =============================================================================
 
 steps:
@@ -23,7 +27,7 @@ steps:
         set -e
 
         # ---- Validate required inputs ----
-        if [ -z "$ACCUKNOX_ENDPOINT" ] || [ -z "$ACCUKNOX_TOKEN" ] || [ -z "$ACCUKNOX_LABEL" ]; then
+        if [ -z "$$ACCUKNOX_ENDPOINT" ] || [ -z "$$ACCUKNOX_TOKEN" ] || [ -z "$$ACCUKNOX_LABEL" ]; then
           echo "ERROR: accuknox_endpoint, accuknox_token, and accuknox_label must be set!"
           exit 1
         fi
@@ -35,34 +39,32 @@ steps:
         chmod +x /workspace/accuknox-aspm-scanner
 
         # ---- Resolve soft-fail flag ----
-        SOFT_FAIL="${SOFT_FAIL//[$'\t\r\n ']}"
+        SOFT_FAIL=$(echo "$$SOFT_FAIL" | tr -d ' \t\r\n')
         SOFT_FAIL_ARG=""
-        if [ "$SOFT_FAIL" = "true" ]; then
+        if [ "$$SOFT_FAIL" = "true" ]; then
           SOFT_FAIL_ARG="--softfail"
         fi
 
         # ---- Fallback for manual builds (no trigger context) ----
-        if [ -z "$COMMIT_SHA" ]; then
-          COMMIT_SHA="manual-${BUILD_ID}"
+        if [ -z "$$COMMIT_SHA" ]; then
+          COMMIT_SHA="manual-$$PIPELINE_ID"
         fi
-        if [ -z "$REPO_URL" ]; then
+        if [ -z "$$REPO_URL" ]; then
           echo "WARNING: _REPO_URL substitution is empty. Set it in your trigger or build config."
         fi
 
         # ---- Run the SAST scan ----
         echo "Running AccuKnox SAST scan..."
-        /workspace/accuknox-aspm-scanner scan --keep-results $SOFT_FAIL_ARG sast \
+        /workspace/accuknox-aspm-scanner scan --keep-results $$SOFT_FAIL_ARG sast \
           --command "." \
-          --repo-url "$REPO_URL" \
-          --commit-sha "$COMMIT_SHA" \
-          --pipeline-id "$PIPELINE_ID" \
-          --job-url "$JOB_URL" \
+          --repo-url "$$REPO_URL" \
+          --commit-sha "$$COMMIT_SHA" \
+          --pipeline-id "$$PIPELINE_ID" \
+          --job-url "$$JOB_URL" \
           --container-mode
 
 # =============================================================================
-# Substitutions
-# Cloud Build requires user-defined substitutions to be UPPERCASE and prefixed
-# with an underscore. They map 1:1 to the GitHub Action inputs:
+# Substitutions (map 1:1 to action.yaml inputs)
 #   _ACCUKNOX_ENDPOINT  -> accuknox_endpoint  (required)
 #   _ACCUKNOX_TOKEN     -> accuknox_token     (required)
 #   _ACCUKNOX_LABEL     -> accuknox_label     (required)
