@@ -1,0 +1,62 @@
+steps:
+    # Step 1: Check Docker permissions and add user to docker group if necessary
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        id
+        usermod -aG docker $(whoami) || true && chmod -R 777 /workspace # Add user to docker group (ignore if already added)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args: [
+      '-c',
+      "gcloud secrets versions access latest --secret=sonarqube-token --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/sonar-token.txt"
+    ]
+    id: 'access-sonar-secret'
+  - name: 'docker.io/sonarsource/sonar-scanner-cli'
+    entrypoint: '/bin/sh'
+    args:
+      - '-c'
+      - |
+        sonar-scanner -X \
+          -Dsonar.projectKey={project-name} \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=$_SONAR_HOST_URL \
+          -Dsonar.login=$(cat /workspace/sonar-token.txt)
+  - name: 'docker.io/accuknox/sastjob:latest'
+    entrypoint: '/bin/sh'
+    args:
+      - '-c'
+      - |
+        apt update && apt-get install -y docker.io && docker run --rm \
+          -e SQ_URL=$_SONAR_HOST_URL \
+          -e SQ_AUTH_TOKEN=$(cat /workspace/sonar-token.txt) \
+          -e REPORT_PATH=/app/data/ \
+          -e SQ_PROJECTS="^{project-name}$" \
+          -v $(pwd):/app/data/ \
+          accuknox/sastjob:latest
+  # Step 5: Access the secret using gcloud and save it to a file
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args: [
+      '-c',
+      "gcloud secrets versions access latest --secret=accuknox_token --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/ak-token.txt"
+    ]
+    id: 'access-ak-secret'
+  - name: 'gcr.io/cloud-builders/curl'
+    entrypoint: '/bin/sh'
+    args:
+      - '-c'
+      - |
+        for file in $(ls -1 SQ-*.json); do
+          curl --location --request POST "https://$_AK_URL/api/v1/artifact/?tenant_id=$_TENANT_ID&data_type=SQ&save_to_s3=false" \
+            --header "Tenant-Id: $_TENANT_ID" \
+            --header "Authorization: Bearer $(cat /workspace/ak-token.txt)" \
+            --form "file=@\"$file\""
+        done
+substitutions:
+  _SONAR_HOST_URL: "{Sonarqube_host_url}"
+  _AK_URL: "{cspm.<env>.accuknox.com}"
+  _TENANT_ID: "[tenant-id]"
+logsBucket: "gs://{bucket-name}"
