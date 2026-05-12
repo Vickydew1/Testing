@@ -1,62 +1,83 @@
+# =============================================================================
+# AccuKnox SAST (Opengrep) — Google Cloud Build Pipeline
+# Mirrors the accuknox/sast-scan-action GitHub Action.
+# Scans the repo with Opengrep and uploads results to the AccuKnox CSPM panel.
+# =============================================================================
+
 steps:
-    # Step 1: Check Docker permissions and add user to docker group if necessary
-  - name: 'gcr.io/cloud-builders/docker'
-    entrypoint: 'bash'
+  - id: accuknox-sast-scan
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    env:
+      - SOFT_FAIL=${_SOFT_FAIL}
+      - PIPELINE_ID=${BUILD_ID}
+      - JOB_URL=https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}
+      - ACCUKNOX_ENDPOINT=${_ACCUKNOX_ENDPOINT}
+      - ACCUKNOX_TOKEN=${_ACCUKNOX_TOKEN}
+      - ACCUKNOX_LABEL=${_ACCUKNOX_LABEL}
+      - REPO_URL=${_REPO_URL}
+      - COMMIT_SHA=${COMMIT_SHA}
     args:
-      - '-c'
+      - -c
       - |
-        id
-        usermod -aG docker $(whoami) || true && chmod -R 777 /workspace # Add user to docker group (ignore if already added)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args: [
-      '-c',
-      "gcloud secrets versions access latest --secret=sonarqube-token --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/sonar-token.txt"
-    ]
-    id: 'access-sonar-secret'
-  - name: 'docker.io/sonarsource/sonar-scanner-cli'
-    entrypoint: '/bin/sh'
-    args:
-      - '-c'
-      - |
-        sonar-scanner -X \
-          -Dsonar.projectKey={project-name} \
-          -Dsonar.sources=. \
-          -Dsonar.host.url=$_SONAR_HOST_URL \
-          -Dsonar.login=$(cat /workspace/sonar-token.txt)
-  - name: 'docker.io/accuknox/sastjob:latest'
-    entrypoint: '/bin/sh'
-    args:
-      - '-c'
-      - |
-        apt update && apt-get install -y docker.io && docker run --rm \
-          -e SQ_URL=$_SONAR_HOST_URL \
-          -e SQ_AUTH_TOKEN=$(cat /workspace/sonar-token.txt) \
-          -e REPORT_PATH=/app/data/ \
-          -e SQ_PROJECTS="^{project-name}$" \
-          -v $(pwd):/app/data/ \
-          accuknox/sastjob:latest
-  # Step 5: Access the secret using gcloud and save it to a file
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args: [
-      '-c',
-      "gcloud secrets versions access latest --secret=accuknox_token --format='get(payload.data)' | tr '_-' '/+' | base64 -d > /workspace/ak-token.txt"
-    ]
-    id: 'access-ak-secret'
-  - name: 'gcr.io/cloud-builders/curl'
-    entrypoint: '/bin/sh'
-    args:
-      - '-c'
-      - |
-        for file in $(ls -1 SQ-*.json); do
-          curl --location --request POST "https://$_AK_URL/api/v1/artifact/?tenant_id=$_TENANT_ID&data_type=SQ&save_to_s3=false" \
-            --header "Tenant-Id: $_TENANT_ID" \
-            --header "Authorization: Bearer $(cat /workspace/ak-token.txt)" \
-            --form "file=@\"$file\""
-        done
+        set -e
+
+        # ---- Validate required inputs ----
+        if [ -z "$ACCUKNOX_ENDPOINT" ] || [ -z "$ACCUKNOX_TOKEN" ] || [ -z "$ACCUKNOX_LABEL" ]; then
+          echo "ERROR: accuknox_endpoint, accuknox_token, and accuknox_label must be set!"
+          exit 1
+        fi
+
+        # ---- Download the AccuKnox ASPM Scanner ----
+        echo "Downloading AccuKnox ASPM Scanner..."
+        curl -sSL https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.2/accuknox-aspm-scanner \
+          -o /workspace/accuknox-aspm-scanner
+        chmod +x /workspace/accuknox-aspm-scanner
+
+        # ---- Resolve soft-fail flag ----
+        SOFT_FAIL="${SOFT_FAIL//[$'\t\r\n ']}"
+        SOFT_FAIL_ARG=""
+        if [ "$SOFT_FAIL" = "true" ]; then
+          SOFT_FAIL_ARG="--softfail"
+        fi
+
+        # ---- Fallback for manual builds (no trigger context) ----
+        if [ -z "$COMMIT_SHA" ]; then
+          COMMIT_SHA="manual-${BUILD_ID}"
+        fi
+        if [ -z "$REPO_URL" ]; then
+          echo "WARNING: _REPO_URL substitution is empty. Set it in your trigger or build config."
+        fi
+
+        # ---- Run the SAST scan ----
+        echo "Running AccuKnox SAST scan..."
+        /workspace/accuknox-aspm-scanner scan --keep-results $SOFT_FAIL_ARG sast \
+          --command "." \
+          --repo-url "$REPO_URL" \
+          --commit-sha "$COMMIT_SHA" \
+          --pipeline-id "$PIPELINE_ID" \
+          --job-url "$JOB_URL" \
+          --container-mode
+
+# =============================================================================
+# Substitutions
+# Cloud Build requires user-defined substitutions to be UPPERCASE and prefixed
+# with an underscore. They map 1:1 to the GitHub Action inputs:
+#   _ACCUKNOX_ENDPOINT  -> accuknox_endpoint  (required)
+#   _ACCUKNOX_TOKEN     -> accuknox_token     (required)
+#   _ACCUKNOX_LABEL     -> accuknox_label     (required)
+#   _SOFT_FAIL          -> soft_fail          (optional, default "true")
+#   _REPO_URL           -> repository URL     (set per trigger or per build)
+# =============================================================================
 substitutions:
-  _SONAR_HOST_URL: "{Sonarqube_host_url}"
-  _AK_URL: "{cspm.<env>.accuknox.com}"
-  _TENANT_ID: "[tenant-id]"
-logsBucket: "gs://{bucket-name}"
+  _ACCUKNOX_ENDPOINT: ""
+  _ACCUKNOX_TOKEN: ""
+  _ACCUKNOX_LABEL: ""
+  _SOFT_FAIL: "true"
+  _REPO_URL: ""
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+timeout: 1800s
