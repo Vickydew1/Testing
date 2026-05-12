@@ -3,9 +3,9 @@
 # Mirrors the accuknox/sast-scan-action GitHub Action.
 # Scans the repo with Opengrep and uploads results to the AccuKnox CSPM panel.
 # -----------------------------------------------------------------------------
-# Values are read from substitution variables. Set them either:
-#   (a) In the Cloud Build trigger UI under "Substitution variables", OR
-#   (b) On the CLI via: gcloud builds submit --substitutions=_FOO=...,_BAR=...
+# Base image is ubuntu:24.04 because the AccuKnox scanner binary needs
+# GLIBC_2.38+, which gcr.io/cloud-builders/docker does not provide.
+# Docker CLI is installed inline so --container-mode can spawn scan containers.
 # -----------------------------------------------------------------------------
 # Cloud Build escaping rules used here:
 #   ${_FOO}, ${BUILD_ID}, ${COMMIT_SHA}, ${PROJECT_ID}  -> resolved by Cloud Build
@@ -14,7 +14,7 @@
 
 steps:
   - id: accuknox-sast-scan
-    name: gcr.io/cloud-builders/docker
+    name: ubuntu:24.04
     entrypoint: bash
     env:
       - SOFT_FAIL=${_SOFT_FAIL}
@@ -29,6 +29,11 @@ steps:
       - -c
       - |
         set -e
+
+        # ---- Install runtime deps (curl + docker CLI) ----
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq
+        apt-get install -y -qq --no-install-recommends curl ca-certificates docker.io
 
         # ---- Validate required inputs ----
         if [ -z "$$ACCUKNOX_ENDPOINT" ] || [ -z "$$ACCUKNOX_TOKEN" ] || [ -z "$$ACCUKNOX_LABEL" ]; then
