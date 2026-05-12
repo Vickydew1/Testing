@@ -1,5 +1,20 @@
-# AccuKnox SAST (Opengrep) — Google Cloud Build Pipeline
-
+# =============================================================================
+# AccuKnox IaC (Checkov) — Google Cloud Build Pipeline
+# Scans the repo for Infrastructure-as-Code misconfigurations and uploads
+# results to the AccuKnox CSPM panel.
+# -----------------------------------------------------------------------------
+# Pipeline (3 steps):
+#   1. validate-inputs   — fail fast if required substitutions are empty
+#   2. download-scanner  — fetch the AccuKnox ASPM scanner CLI to /workspace
+#   3. run-iac-scan      — install Checkov locally, run scan, upload to CSPM
+# -----------------------------------------------------------------------------
+# Base image is ubuntu:24.04 (glibc 2.39) because the scanner needs GLIBC_2.38+.
+# --container-mode is intentionally NOT used, so no docker dependency.
+# -----------------------------------------------------------------------------
+# Cloud Build escaping rules used here:
+#   ${_FOO}, ${BUILD_ID}, ${BRANCH_NAME}, ${PROJECT_ID}  -> resolved by Cloud Build
+#   $$FOO, $${FOO}                                        -> passed through to bash
+# =============================================================================
 
 steps:
 
@@ -45,20 +60,20 @@ steps:
         echo "Scanner downloaded to /workspace/accuknox-aspm-scanner"
 
   # ---------------------------------------------------------------------------
-  # Step 3: Run the AccuKnox SAST (Opengrep) scan and upload to CSPM
+  # Step 3: Install Checkov, run the IaC scan, upload to AccuKnox CSPM
+  # Install + scan run in the same step because ~/.local/bin/accuknox/ does not
+  # persist across Cloud Build steps — only /workspace is shared.
   # ---------------------------------------------------------------------------
-  - id: run-sast-scan
+  - id: run-iac-scan
     name: ubuntu:24.04
     entrypoint: bash
     env:
       - SOFT_FAIL=${_SOFT_FAIL}
-      - PIPELINE_ID=${BUILD_ID}
-      - JOB_URL=https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}
       - ACCUKNOX_ENDPOINT=${_ACCUKNOX_ENDPOINT}
       - ACCUKNOX_TOKEN=${_ACCUKNOX_TOKEN}
       - ACCUKNOX_LABEL=${_ACCUKNOX_LABEL}
       - REPO_URL=${_REPO_URL}
-      - COMMIT_SHA=${COMMIT_SHA}
+      - BRANCH_NAME=${BRANCH_NAME}
     args:
       - -c
       - |
@@ -69,10 +84,10 @@ steps:
         apt-get update -qq
         apt-get install -y -qq --no-install-recommends ca-certificates
 
-        # Install the SAST tool (Opengrep) locally
+        # Install the IaC tool (Checkov) locally
         # Required because we are not using --container-mode
-        echo "Installing SAST tool (Opengrep)..."
-        /workspace/accuknox-aspm-scanner tool install --type sast
+        echo "Installing IaC tool (Checkov)..."
+        /workspace/accuknox-aspm-scanner tool install --type iac
 
         # Resolve soft-fail flag
         SOFT_FAIL=$(echo "$$SOFT_FAIL" | tr -d ' \t\r\n')
@@ -81,25 +96,26 @@ steps:
           SOFT_FAIL_ARG="--softfail"
         fi
 
-        # Fallbacks for manual builds (no trigger context)
-        if [ -z "$$COMMIT_SHA" ]; then
-          COMMIT_SHA="manual-$$PIPELINE_ID"
+        # Optional repo-branch arg
+        REPO_BRANCH_ARG=""
+        if [ -n "$$BRANCH_NAME" ]; then
+          REPO_BRANCH_ARG="--repo-branch $$BRANCH_NAME"
         fi
+
+        # Fallback for missing REPO_URL
         if [ -z "$$REPO_URL" ]; then
           echo "WARNING: _REPO_URL substitution is empty."
         fi
 
-        # Run the SAST scan
-        echo "Running AccuKnox SAST scan..."
-        /workspace/accuknox-aspm-scanner scan --keep-results $$SOFT_FAIL_ARG sast \
-          --command "." \
+        # Run the IaC scan
+        echo "Running AccuKnox IaC scan..."
+        /workspace/accuknox-aspm-scanner scan --keep-results $$SOFT_FAIL_ARG iac \
+          --command "-d ." \
           --repo-url "$$REPO_URL" \
-          --commit-sha "$$COMMIT_SHA" \
-          --pipeline-id "$$PIPELINE_ID" \
-          --job-url "$$JOB_URL"
+          $$REPO_BRANCH_ARG
 
 # =============================================================================
-# Substitutions (map 1:1 to action.yaml inputs)
+# Substitutions
 #   _ACCUKNOX_ENDPOINT  -> accuknox_endpoint  (required)
 #   _ACCUKNOX_TOKEN     -> accuknox_token     (required)
 #   _ACCUKNOX_LABEL     -> accuknox_label     (required)
