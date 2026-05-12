@@ -3,6 +3,12 @@
 # Mirrors the accuknox/sast-scan-action GitHub Action.
 # Scans the repo with Opengrep and uploads results to the AccuKnox CSPM panel.
 # -----------------------------------------------------------------------------
+# Secrets are pulled from Google Secret Manager:
+#   accuknox-endpoint -> ACCUKNOX_ENDPOINT
+#   accuknox-token    -> ACCUKNOX_TOKEN
+#   accuknox-label    -> ACCUKNOX_LABEL
+# If your secret IDs are different, override via the _*_SECRET substitutions.
+# -----------------------------------------------------------------------------
 # Cloud Build escaping rules used here:
 #   ${_FOO}, ${BUILD_ID}, ${COMMIT_SHA}, ${PROJECT_ID}  -> resolved by Cloud Build
 #   $$FOO, $${FOO}                                       -> passed through to bash
@@ -12,13 +18,14 @@ steps:
   - id: accuknox-sast-scan
     name: gcr.io/cloud-builders/docker
     entrypoint: bash
+    secretEnv:
+      - ACCUKNOX_ENDPOINT
+      - ACCUKNOX_TOKEN
+      - ACCUKNOX_LABEL
     env:
       - SOFT_FAIL=${_SOFT_FAIL}
       - PIPELINE_ID=${BUILD_ID}
       - JOB_URL=https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}
-      - ACCUKNOX_ENDPOINT=${_ACCUKNOX_ENDPOINT}
-      - ACCUKNOX_TOKEN=${_ACCUKNOX_TOKEN}
-      - ACCUKNOX_LABEL=${_ACCUKNOX_LABEL}
       - REPO_URL=${_REPO_URL}
       - COMMIT_SHA=${COMMIT_SHA}
     args:
@@ -26,9 +33,9 @@ steps:
       - |
         set -e
 
-        # ---- Validate required inputs ----
+        # ---- Validate required inputs (sourced from Secret Manager) ----
         if [ -z "$$ACCUKNOX_ENDPOINT" ] || [ -z "$$ACCUKNOX_TOKEN" ] || [ -z "$$ACCUKNOX_LABEL" ]; then
-          echo "ERROR: accuknox_endpoint, accuknox_token, and accuknox_label must be set!"
+          echo "ERROR: accuknox_endpoint, accuknox_token, and accuknox_label must be set in Secret Manager!"
           exit 1
         fi
 
@@ -64,17 +71,26 @@ steps:
           --container-mode
 
 # =============================================================================
-# Substitutions (map 1:1 to action.yaml inputs)
-#   _ACCUKNOX_ENDPOINT  -> accuknox_endpoint  (required)
-#   _ACCUKNOX_TOKEN     -> accuknox_token     (required)
-#   _ACCUKNOX_LABEL     -> accuknox_label     (required)
-#   _SOFT_FAIL          -> soft_fail          (optional, default "true")
-#   _REPO_URL           -> repository URL     (set per trigger or per build)
+# Pull values from Google Secret Manager
+# Default secret IDs: accuknox-endpoint, accuknox-token, accuknox-label
+# Override at build time if yours differ, e.g.:
+#   --substitutions=_ACCUKNOX_TOKEN_SECRET=my-custom-token-secret
 # =============================================================================
+availableSecrets:
+  secretManager:
+    - versionName: projects/${PROJECT_ID}/secrets/${_ACCUKNOX_ENDPOINT_SECRET}/versions/latest
+      env: ACCUKNOX_ENDPOINT
+    - versionName: projects/${PROJECT_ID}/secrets/${_ACCUKNOX_TOKEN_SECRET}/versions/latest
+      env: ACCUKNOX_TOKEN
+    - versionName: projects/${PROJECT_ID}/secrets/${_ACCUKNOX_LABEL_SECRET}/versions/latest
+      env: ACCUKNOX_LABEL
+
 substitutions:
-  _ACCUKNOX_ENDPOINT: ""
-  _ACCUKNOX_TOKEN: ""
-  _ACCUKNOX_LABEL: ""
+  # Secret Manager secret IDs
+  _ACCUKNOX_ENDPOINT_SECRET: ACCUKNOX_ENDPOINT
+  _ACCUKNOX_TOKEN_SECRET: ACCUKNOX_TOKEN
+  _ACCUKNOX_LABEL_SECRET: ACCUKNOX_LABEL
+  # Plain substitutions
   _SOFT_FAIL: "true"
   _REPO_URL: ""
 
