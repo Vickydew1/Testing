@@ -26,5 +26,5 @@ jobs:
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
           project-name:       Action
-          project-classifier: aplication
+          project-classifier: application
 
