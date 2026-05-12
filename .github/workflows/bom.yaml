@@ -1,25 +1,30 @@
-name: Test AIBOM Bedrock
+name: Test SBOM Image
 
 on:
   push:
     branches: [main]
 
 jobs:
-  aibom-bedrock:
+  sbom-image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Generate AIBOM from AWS Bedrock
+      - name: Build image
+        id: build
+        run: |
+          IMAGE="testapp:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SBOM from image
         uses: Vickydew1/xbom-action@main
         with:
-          bom-type:              aibom
-          aibom-source:          bedrock
-          aws-region:            us-east-1
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          token:                 ${{ secrets.ACCUKNOX_TOKEN }}
-          endpoint:              ${{ secrets.ACCUKNOX_ENDPOINT }}
-          label:                 ${{ secrets.ACCUKNOX_LABEL }}
-          project-name:          Action
-          project-classifier:    application
+          bom-type:           sbom
+          image:              ${{ steps.build.outputs.image }}
+          token:              ${{ secrets.ACCUKNOX_TOKEN }}
+          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
+          label:              ${{ secrets.ACCUKNOX_LABEL }}
+          project-name:       Action
+          project-classifier: aplication
+
