@@ -1,5 +1,22 @@
 # =============================================================================
-# AccuKnox Secret Scan (TruffleHog) — Google Cloud Build Pipeline
+# AccuKnox SonarQube SAST (sq-sast) — Google Cloud Build Pipeline
+# Runs a SonarQube/SonarCloud scan and fetches results into AccuKnox CSPM.
+# -----------------------------------------------------------------------------
+# Pipeline (3 steps):
+#   1. validate-inputs   — fail fast if required substitutions are empty
+#   2. download-scanner  — fetch the AccuKnox ASPM scanner CLI to /workspace
+#   3. run-sq-sast-scan  — install Sonar Scanner, run scan, upload to CSPM
+# -----------------------------------------------------------------------------
+# Base image is ubuntu:24.04 (glibc 2.39) because the scanner needs GLIBC_2.38+.
+# --container-mode is intentionally NOT used, so no docker dependency.
+# -----------------------------------------------------------------------------
+# IMPORTANT: SonarQube credentials are inline in this file. For production,
+# move SONAR_TOKEN to a substitution or Secret Manager. Committing it to git
+# exposes it to anyone with repo read access.
+# -----------------------------------------------------------------------------
+# Cloud Build escaping rules used here:
+#   ${_FOO}, ${BUILD_ID}, ${BRANCH_NAME}, ${COMMIT_SHA}, ${PROJECT_ID}  -> Cloud Build
+#   $$FOO, $${FOO}                                                       -> bash
 # =============================================================================
 
 steps:
@@ -46,63 +63,95 @@ steps:
         echo "Scanner downloaded to /workspace/accuknox-aspm-scanner"
 
   # ---------------------------------------------------------------------------
-  # Step 3: Install TruffleHog, run the secret scan, upload to AccuKnox CSPM
+  # Step 3: Install Sonar Scanner, run the scan, upload results to AccuKnox CSPM
   # ---------------------------------------------------------------------------
-  - id: run-secret-scan
+  - id: run-sq-sast-scan
     name: ubuntu:24.04
     entrypoint: bash
     env:
       - ACCUKNOX_ENDPOINT=${_ACCUKNOX_ENDPOINT}
       - ACCUKNOX_TOKEN=${_ACCUKNOX_TOKEN}
       - ACCUKNOX_LABEL=${_ACCUKNOX_LABEL}
+      - BRANCH_NAME=${BRANCH_NAME}
+      - COMMIT_SHA=${COMMIT_SHA}
+      - BUILD_ID=${BUILD_ID}
+      - PROJECT_ID=${PROJECT_ID}
     args:
       - -c
       - |
         set -e
 
         # ====================================================================
-        # Secret-specific configuration — edit these values as needed
+        # SonarQube configuration — edit these values for your setup
         # ====================================================================
-        SOFT_FAIL="true"                  # true to keep pipeline green on findings
-        UNSHALLOW_HISTORY="true"         # true to scan full git history (slower)
-        SCAN_PATH="."                     # path within /workspace to scan
+        SONAR_PROJECT_KEY="Test_GCB"
+        SONAR_HOST_URL="https://sq.accuknox.com/"
+        SONAR_TOKEN="squ_3be82b2f89d03f3be34203a520528bd7023e4f48"
+        SONAR_ORGANIZATION=""          # leave empty for self-hosted SonarQube
+
+        SKIP_SONAR_SCAN="false"                 # true if Sonar already ran in another pipeline
+        SOFT_FAIL="true"                        # true to keep pipeline green on findings
+        REPO_URL="https://github.com/Vickydew1/Testing.git"
         # ====================================================================
 
-        # Install ca-certificates (HTTPS upload) and git (required by TruffleHog)
+        # Install ca-certificates and Java (Sonar Scanner is a JVM tool)
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq
-        apt-get install -y -qq --no-install-recommends ca-certificates git
+        apt-get install -y -qq --no-install-recommends ca-certificates default-jre-headless
 
-        # Optionally fetch full git history for deeper scanning
-        if [ "$$UNSHALLOW_HISTORY" = "true" ]; then
-          echo "Fetching full git history..."
-          cd /workspace
-          git fetch --unshallow || echo "Repo is already unshallow or unshallow failed; continuing."
-        fi
-
-        # Install the secret-scanning tool (TruffleHog) locally
+        # Install the SonarQube SAST tool locally
         # Required because we are not using --container-mode
-        echo "Installing secret scanning tool (TruffleHog)..."
-        /workspace/accuknox-aspm-scanner tool install --type secret
+        echo "Installing SonarQube SAST tool..."
+        /workspace/accuknox-aspm-scanner tool install --type sq-sast
 
-        # Resolve soft-fail flag
+        # Resolve soft-fail and skip-scan flags
         SOFT_FAIL=$(echo "$$SOFT_FAIL" | tr -d ' \t\r\n')
         SOFT_FAIL_ARG=""
         if [ "$$SOFT_FAIL" = "true" ]; then
           SOFT_FAIL_ARG="--softfail"
         fi
 
-        # Run the secret scan
-        echo "Running AccuKnox secret scan on $$SCAN_PATH ..."
-        cd /workspace
-        /workspace/accuknox-aspm-scanner scan --keep-results $$SOFT_FAIL_ARG secret \
-          --command "git file://$$SCAN_PATH"
+        SKIP_SCAN_ARG=""
+        if [ "$$SKIP_SONAR_SCAN" = "true" ]; then
+          SKIP_SCAN_ARG="--skip-sonar-scan"
+        fi
+
+        # Optional organization arg (SonarCloud only)
+        SONAR_ORG_FLAG=""
+        if [ -n "$$SONAR_ORGANIZATION" ]; then
+          SONAR_ORG_FLAG="-Dsonar.organization=$$SONAR_ORGANIZATION"
+        fi
+
+        # Build the Sonar --command string
+        SONAR_CMD="-Dsonar.projectKey=$$SONAR_PROJECT_KEY -Dsonar.host.url=$$SONAR_HOST_URL -Dsonar.token=$$SONAR_TOKEN $$SONAR_ORG_FLAG"
+
+        # Pipeline metadata
+        PIPELINE_URL="https://console.cloud.google.com/cloud-build/builds/$$BUILD_ID?project=$$PROJECT_ID"
+        if [ -z "$$COMMIT_SHA" ]; then
+          COMMIT_SHA="manual-$$BUILD_ID"
+        fi
+
+        # Optional branch arg
+        BRANCH_ARG=""
+        if [ -n "$$BRANCH_NAME" ]; then
+          BRANCH_ARG="--branch $$BRANCH_NAME"
+        fi
+
+        # Run the SQ-SAST scan
+        echo "Running AccuKnox SQ-SAST scan against $$SONAR_HOST_URL ..."
+        /workspace/accuknox-aspm-scanner scan --keep-results $$SOFT_FAIL_ARG sq-sast \
+          --command "$$SONAR_CMD" \
+          $$SKIP_SCAN_ARG \
+          --repo-url "$$REPO_URL" \
+          $$BRANCH_ARG \
+          --commit-sha "$$COMMIT_SHA" \
+          --pipeline-url "$$PIPELINE_URL"
 
 # =============================================================================
 # Substitutions (only AccuKnox credentials — set these in the trigger UI)
 #   _ACCUKNOX_ENDPOINT  -> accuknox_endpoint  (required)
 #   _ACCUKNOX_TOKEN     -> accuknox_token     (required)
-#   _ACCUKNOX_LABEL     -> accuknox_label     (required, e.g. "secret-myrepo")
+#   _ACCUKNOX_LABEL     -> accuknox_label     (required, e.g. "sq-sast-myrepo")
 # =============================================================================
 substitutions:
   _ACCUKNOX_ENDPOINT: ""
@@ -113,4 +162,5 @@ options:
   logging: CLOUD_LOGGING_ONLY
   machineType: E2_HIGHCPU_8
 
-timeout: 1800s
+# SonarQube scans can be slow on large codebases. 1 hour ceiling.
+timeout: 3600s
