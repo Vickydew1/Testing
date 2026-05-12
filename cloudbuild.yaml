@@ -3,9 +3,13 @@
 # Mirrors the accuknox/sast-scan-action GitHub Action.
 # Scans the repo with Opengrep and uploads results to the AccuKnox CSPM panel.
 # -----------------------------------------------------------------------------
-# Base image is ubuntu:24.04 because the AccuKnox scanner binary needs
-# GLIBC_2.38+, which gcr.io/cloud-builders/docker does not provide.
-# Docker CLI is installed inline so --container-mode can spawn scan containers.
+# Pipeline (3 steps):
+#   1. validate-inputs   — fail fast if required substitutions are empty
+#   2. download-scanner  — fetch the AccuKnox ASPM scanner CLI to /workspace
+#   3. run-sast-scan     — execute the scan and upload results to CSPM
+# -----------------------------------------------------------------------------
+# Base image is ubuntu:24.04 (glibc 2.39) because the scanner needs GLIBC_2.38+.
+# --container-mode is intentionally NOT used, so no docker dependency.
 # -----------------------------------------------------------------------------
 # Cloud Build escaping rules used here:
 #   ${_FOO}, ${BUILD_ID}, ${COMMIT_SHA}, ${PROJECT_ID}  -> resolved by Cloud Build
@@ -13,7 +17,52 @@
 # =============================================================================
 
 steps:
-  - id: accuknox-sast-scan
+
+  # ---------------------------------------------------------------------------
+  # Step 1: Validate required inputs (fail fast)
+  # ---------------------------------------------------------------------------
+  - id: validate-inputs
+    name: ubuntu:24.04
+    entrypoint: bash
+    env:
+      - ACCUKNOX_ENDPOINT=${_ACCUKNOX_ENDPOINT}
+      - ACCUKNOX_TOKEN=${_ACCUKNOX_TOKEN}
+      - ACCUKNOX_LABEL=${_ACCUKNOX_LABEL}
+    args:
+      - -c
+      - |
+        set -e
+        echo "Validating required inputs..."
+        if [ -z "$$ACCUKNOX_ENDPOINT" ] || [ -z "$$ACCUKNOX_TOKEN" ] || [ -z "$$ACCUKNOX_LABEL" ]; then
+          echo "ERROR: _ACCUKNOX_ENDPOINT, _ACCUKNOX_TOKEN, and _ACCUKNOX_LABEL must be set!"
+          exit 1
+        fi
+        echo "All required inputs present."
+
+  # ---------------------------------------------------------------------------
+  # Step 2: Download the AccuKnox ASPM Scanner CLI
+  # ---------------------------------------------------------------------------
+  - id: download-scanner
+    name: ubuntu:24.04
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq
+        apt-get install -y -qq --no-install-recommends curl ca-certificates
+
+        echo "Downloading AccuKnox ASPM Scanner v0.14.2..."
+        curl -sSL https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.2/accuknox-aspm-scanner \
+          -o /workspace/accuknox-aspm-scanner
+        chmod +x /workspace/accuknox-aspm-scanner
+        echo "Scanner downloaded to /workspace/accuknox-aspm-scanner"
+
+  # ---------------------------------------------------------------------------
+  # Step 3: Run the AccuKnox SAST (Opengrep) scan and upload to CSPM
+  # ---------------------------------------------------------------------------
+  - id: run-sast-scan
     name: ubuntu:24.04
     entrypoint: bash
     env:
@@ -30,47 +79,34 @@ steps:
       - |
         set -e
 
-        # ---- Install runtime deps (curl + docker CLI) ----
+        # Install ca-certificates so the scanner can upload over HTTPS
         export DEBIAN_FRONTEND=noninteractive
         apt-get update -qq
-        apt-get install -y -qq --no-install-recommends curl ca-certificates docker.io
+        apt-get install -y -qq --no-install-recommends ca-certificates
 
-        # ---- Validate required inputs ----
-        if [ -z "$$ACCUKNOX_ENDPOINT" ] || [ -z "$$ACCUKNOX_TOKEN" ] || [ -z "$$ACCUKNOX_LABEL" ]; then
-          echo "ERROR: _ACCUKNOX_ENDPOINT, _ACCUKNOX_TOKEN, and _ACCUKNOX_LABEL must be set!"
-          exit 1
-        fi
-
-        # ---- Download the AccuKnox ASPM Scanner ----
-        echo "Downloading AccuKnox ASPM Scanner..."
-        curl -sSL https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.2/accuknox-aspm-scanner \
-          -o /workspace/accuknox-aspm-scanner
-        chmod +x /workspace/accuknox-aspm-scanner
-
-        # ---- Resolve soft-fail flag ----
+        # Resolve soft-fail flag
         SOFT_FAIL=$(echo "$$SOFT_FAIL" | tr -d ' \t\r\n')
         SOFT_FAIL_ARG=""
         if [ "$$SOFT_FAIL" = "true" ]; then
           SOFT_FAIL_ARG="--softfail"
         fi
 
-        # ---- Fallback for manual builds (no trigger context) ----
+        # Fallbacks for manual builds (no trigger context)
         if [ -z "$$COMMIT_SHA" ]; then
           COMMIT_SHA="manual-$$PIPELINE_ID"
         fi
         if [ -z "$$REPO_URL" ]; then
-          echo "WARNING: _REPO_URL substitution is empty. Set it in your trigger or build config."
+          echo "WARNING: _REPO_URL substitution is empty."
         fi
 
-        # ---- Run the SAST scan ----
+        # Run the SAST scan
         echo "Running AccuKnox SAST scan..."
         /workspace/accuknox-aspm-scanner scan --keep-results $$SOFT_FAIL_ARG sast \
           --command "." \
           --repo-url "$$REPO_URL" \
           --commit-sha "$$COMMIT_SHA" \
           --pipeline-id "$$PIPELINE_ID" \
-          --job-url "$$JOB_URL" \
-          --container-mode
+          --job-url "$$JOB_URL"
 
 # =============================================================================
 # Substitutions (map 1:1 to action.yaml inputs)
