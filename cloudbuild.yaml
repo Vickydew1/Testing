@@ -125,13 +125,15 @@ steps:
         fi
 
         # ---- Vulnerability scan ----
+        # Local Trivy reads the tarball directly from /workspace.
+        # We intentionally skip --container-mode here because the in-container
+        # Trivy cannot read /workspace files in Cloud Build.
         echo "Running AccuKnox vulnerability scan..."
         /workspace/accuknox-aspm-scanner scan \
           $$SOFT_FAIL_ARG \
           --keep-results \
           container \
-          --command "$$CMD" \
-          --container-mode
+          --command "$$CMD"
 
         cp /workspace/results.json /workspace/results-vuln.json
 
@@ -144,7 +146,6 @@ steps:
             --project-name "$$PROJECT_NAME" \
             container \
             --command "$$CMD" \
-            --container-mode \
             --generate-sbom
 
           cp /workspace/results.json /workspace/results-sbom.json
