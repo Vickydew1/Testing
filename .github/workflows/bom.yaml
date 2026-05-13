@@ -13,7 +13,7 @@ jobs:
       - name: Generate signed SBOM
         uses: Vickydew1/xbom-action@main
         with:
-          bom-type:           sbom
+          bom-type:           cbom
           path:               "."
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
