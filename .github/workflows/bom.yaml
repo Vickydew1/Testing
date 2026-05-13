@@ -1,53 +1,42 @@
-name: Test Image Scans (SBOM + CBOM)
+name: AccuKnox xBOM Scan
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
+  release:
+    types: [published]
 
 jobs:
-  sbom-image:
+  xbom-publish:
     runs-on: ubuntu-latest
+    permissions:
+      actions:  read
+      contents: write
+
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Build image
-        id: build
-        run: |
-          IMAGE="testapp:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-
-      - name: SBOM from image
+      - name: Run AccuKnox xBOM Scan
         uses: Vickydew1/xbom-action@main
         with:
           bom-type:           sbom
-          image:              ${{ steps.build.outputs.image }}
+          path:               "."
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
           project-name:       Action
-          project-classifier: container
+          project-classifier: application
 
-  cbom-image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build image
-        id: build
-        run: |
-          IMAGE="testapp:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
-
-      - name: CBOM from image
-        uses: Vickydew1/xbom-action@main
+      - name: Download Workflow Artefacts
+        uses: actions/download-artifact@v4
         with:
-          bom-type:           cbom
-          image:              ${{ steps.build.outputs.image }}
-          token:              ${{ secrets.ACCUKNOX_TOKEN }}
-          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
-          label:              ${{ secrets.ACCUKNOX_LABEL }}
-          project-name:       Action
-          project-classifier: container
+          path: artifacts
+
+      - name: Verify Downloaded Files
+        run: |
+          echo "=== DOWNLOADED ARTIFACTS ==="
+          find artifacts -type f
+
+      - name: Upload SBOM to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.json
