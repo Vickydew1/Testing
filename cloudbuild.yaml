@@ -96,6 +96,12 @@ steps:
         echo "Building Docker image $$IMAGE_NAME:$$TAG from context $$DOCKERFILE_CONTEXT ..."
         docker build -t "$$IMAGE_NAME:$$TAG" -f "$$DOCKERFILE_CONTEXT" .
 
+        # Save the image to a tarball that the in-container Trivy can read.
+        # Cloud Build's in-step Trivy container cannot see the host docker daemon,
+        # but /workspace is mounted into the Trivy container, so a tarball works.
+        echo "Saving image to /workspace/image.tar for scanning..."
+        docker save "$$IMAGE_NAME:$$TAG" -o /workspace/image.tar
+
         # Pre-create results file with permissive perms (scanner writes from inside a container)
         touch /workspace/results.json
         chmod 666 /workspace/results.json
@@ -112,8 +118,8 @@ steps:
           SOFT_FAIL_ARG="--softfail"
         fi
 
-        # Build the --command string for Trivy
-        CMD="image $$IMAGE_NAME:$$TAG"
+        # Build the --command string for Trivy (scan the tarball, not the registry)
+        CMD="image --input /workspace/image.tar"
         if [ -n "$$SEVERITY" ]; then
           CMD="$$CMD --severity $$SEVERITY"
         fi
