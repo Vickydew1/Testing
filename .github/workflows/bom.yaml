@@ -15,15 +15,9 @@ jobs:
         with:
           bom-type:           sbom
           path:               "."
-          sign:               true
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
           project-name:       Action
           project-classifier: application
-
-      - name: What does pkgscan actually support?
-        shell: bash
-        run: |
-          knoxctl pkgscan scan --help 2>&1 | grep -i sign || echo "NO sign flags in help"
 
