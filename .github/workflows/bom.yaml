@@ -1,23 +1,53 @@
-name: Test SBOM Filesystem (signed)
+name: Test Image Scans (SBOM + CBOM)
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 
 jobs:
-  sbom-fs-signed:
+  sbom-image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Generate signed SBOM
+      - name: Build image
+        id: build
+        run: |
+          IMAGE="testapp:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: SBOM from image
         uses: Vickydew1/xbom-action@main
         with:
-          bom-type:           cbom
-          path:               "."
+          bom-type:           sbom
+          image:              ${{ steps.build.outputs.image }}
           token:              ${{ secrets.ACCUKNOX_TOKEN }}
           endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
           label:              ${{ secrets.ACCUKNOX_LABEL }}
           project-name:       Action
-          project-classifier: application
+          project-classifier: container
 
+  cbom-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build image
+        id: build
+        run: |
+          IMAGE="testapp:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: CBOM from image
+        uses: Vickydew1/xbom-action@main
+        with:
+          bom-type:           cbom
+          image:              ${{ steps.build.outputs.image }}
+          token:              ${{ secrets.ACCUKNOX_TOKEN }}
+          endpoint:           ${{ secrets.ACCUKNOX_ENDPOINT }}
+          label:              ${{ secrets.ACCUKNOX_LABEL }}
+          project-name:       Action
+          project-classifier: container
