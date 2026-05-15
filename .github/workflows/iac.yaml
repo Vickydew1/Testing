@@ -1,28 +1,24 @@
-name: Accuknox IAC scan
+name: AccuKnox IaC Scan Workflow
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
 
 jobs:
-  iac_scan:
+  tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@main
 
-      - name: Run AccuKnox IaC Scan
-        uses: Vickydew1/iac-scan-action@main
+      - name: Run IaC scan
+        uses: accuknox/iac-scan-action@latest
         with:
-          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
-          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-
-          # Optional inputs
-          directory: "."      # default directory
-          file: ""            # specific file, optional
-          compact: true       # hide code blocks in output
-          quiet: true         # show only failed checks
-          soft_fail: true    # fail workflow on scan failures
-          framework: ""       # specify terraform/k8s if needed
+          soft_fail: true                           # Optional: Will continue after found vulnerability 
+          accuknox_token: ${{ secrets.TOKEN }}
+          accuknox_endpoint: ${{ secrets.ENDPOINT }}
+          accuknox_label: ${{ secrets.LABEL }}
