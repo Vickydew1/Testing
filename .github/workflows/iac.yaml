@@ -19,6 +19,6 @@ jobs:
         uses: accuknox/iac-scan-action@latest
         with:
           soft_fail: true                           # Optional: Will continue after found vulnerability 
-          accuknox_token: ${{ secrets.TOKEN }}
-          accuknox_endpoint: ${{ secrets.ENDPOINT }}
-          accuknox_label: ${{ secrets.LABEL }}
+          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
