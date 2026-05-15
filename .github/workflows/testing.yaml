@@ -1,0 +1,74 @@
+name: AccuKnox Security Scans
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  sast-scan:
+    name: SAST Scan (Opengrep)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run AccuKnox SAST
+        uses: accuknox/sast-scan-opengrep-action@latest
+        with:
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          accuknox_ai_analysis: "false"
+          soft_fail: "true"
+
+  iac-scan:
+    name: IaC Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run AccuKnox IaC Scan
+        uses: accuknox/iac-scan-action@latest
+        with:
+          soft_fail: true
+          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run AccuKnox Secret Scan
+        uses: accuknox/secret-scan-action@latest
+        with:
+          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          soft_fail: true
+
+  dast-scan:
+    name: DAST Scan
+    runs-on: ubuntu-latest
+    # DAST runs only on push to main, not on PRs
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run AccuKnox DAST Scan
+        uses: accuknox/dast-scan-action@latest
+        with:
+          target_url: "http://testphp.vulnweb.com"
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          dast_scan_type: "full-scan"
