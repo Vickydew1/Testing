@@ -1,4 +1,4 @@
-name: AccuKnox Security Scans
+name: AccuKnox Security Scan
 
 on:
   push:
