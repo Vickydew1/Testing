@@ -22,7 +22,6 @@ jobs:
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           soft_fail: "true"
-          accuknox_ai_analysis: true
-          severity: "HIGH,CRITICAL"
+          severity: "LOW"
           
           
