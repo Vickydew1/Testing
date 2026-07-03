@@ -35,8 +35,6 @@
 #           sbom_image_ref: "myapp:latest"
 #           sbom_project_name: "test"
 
-
-
 name: AccuKnox SBOM
 on:
   push:
