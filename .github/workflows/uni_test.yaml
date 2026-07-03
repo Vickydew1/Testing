@@ -45,13 +45,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
       - name: Run AccuKnox SBOM (filesystem)
-        uses: Vickydew1/accuknox-code-analysis@main
+        uses: accuknox/accuknox-code-analysis@latest
         with:
           scan_type: "sbom"
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          sbom_scan_type: "image"
-          sbom_image_ref: "nginx:latest"
-          sbom_project_name: "test-1"   # required for SBOM
+          sbom_scan_type: "filesystem"
+          sbom_scan_path: "."
+          sbom_project_name: "Action"   # required for SBOM
           soft_fail: true
