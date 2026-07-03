@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.0
       - name: Run AccuKnox SBOM (filesystem)
-        uses: accuknox/accuknox-code-analysis@latest
+        uses: Vickydew1/accuknox-code-analysis@main
         with:
           scan_type: "sbom"
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
