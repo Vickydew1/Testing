@@ -54,5 +54,5 @@ jobs:
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           sbom_scan_type: "filesystem"
           sbom_scan_path: "."
-          sbom_project_name: "Actiont"   # required for SBOM
+          sbom_project_name: "Action"   # required for SBOM
           soft_fail: true
