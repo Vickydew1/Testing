@@ -35,23 +35,21 @@
 #           sbom_image_ref: "myapp:latest"
 #           sbom_project_name: "test"
 
-name: AccuKnox SBOM
+name: AccuKnox SCA
 on:
   push:
     branches: [main]
 jobs:
-  sbom:
+  sca:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0
-      - name: Run AccuKnox SBOM (filesystem)
+      - name: Run AccuKnox SCA
         uses: Vickydew1/accuknox-code-analysis@main
         with:
-          scan_type: "sbom"
+          scan_type: "sca"
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          sbom_scan_type: "filesystem"
-          sbom_scan_path: "."
-          sbom_project_name: "Action"   # required for SBOM
+          sca_severity: "HIGH,CRITICAL"
           soft_fail: true
