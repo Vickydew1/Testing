@@ -19,6 +19,6 @@ jobs:
         uses: accuknox/iac-scan-action@latest
         with:
           soft_fail: true                           # Optional: Will continue after found vulnerability 
-          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
-          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          accuknox_token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzkyOTEzMjQxLCJpYXQiOjE3ODUyMjM2NDEsImp0aSI6IjM0NjFiODdiZDJlZTRkYzZiYTc1MDA4OTgzMzI5ZTQ0IiwidGVuYW50LWlkIjo0MSwiaXNzIjoiY3NwbS5kZXYuYWNjdWtub3guY29tIn0.H46iapZkeZeEsHJ8TkeGfxWNZSRz2C16jgzGWK4cCfvGZv1d_LCaXnOvc-IRrkyRQbu_mMlfsNxAWXh1uF4R_7YirL2fAqeD5vNaKuX7eU-RnPSwFaLHfrotyX-UaM-wo70JGtWhR2yoMeBwTNrKzFZ-cD1GZbuamlvoa0NYSIcCj1vjS5L_CgTZD-3riS8Er04tMLOC9rjG5WUnlJIGna-7SZPudVRY-VlYxqUZMtmv7gAPhh3vTWTHcEWi0bdvooIH3T-DAiB644djnVPwLvv5NC4ZaMk0OYg6RZDwsru9YZqW7lUkAZQgPutfUjvHO7vmFMFBsLLvk_k7lpMpKQ
+          accuknox_endpoint: cspm.dev.accuknox.com
+          accuknox_label: GVD
