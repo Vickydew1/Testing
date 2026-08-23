@@ -9,8 +9,8 @@ copy with a "remediation" field added under extra - which render_comment.py's
 loader already checks for (extra.remediation), so no changes needed downstream.
 
 Usage:
-  OPENROUTER_API_KEY=... python3 generate_remediation.py result.json result.enriched.json
-  OPENROUTER_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --model=anthropic/claude-sonnet-4.5
+  OPENROUTER_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --changed-files=a.js,b.js
+  OPENROUTER_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --changed-files=a.js --model=anthropic/claude-sonnet-4.5
 
 NOTE: not live-tested against the real API in this environment (no network
 access here) - the request shape matches OpenRouter's documented OpenAI-
@@ -70,16 +70,23 @@ def main():
     in_path, out_path = sys.argv[1], sys.argv[2]
     api_key = os.environ.get("OPENROUTER_API_KEY")
     model = DEFAULT_MODEL
+    changed_files = None
     for arg in sys.argv[3:]:
         if arg.startswith("--model="):
             model = arg.split("=", 1)[1]
+        elif arg.startswith("--changed-files="):
+            val = arg.split("=", 1)[1]
+            changed_files = set(val.split(",")) if val else set()
     dry_run = "--dry-run" in sys.argv or not api_key
 
     with open(in_path) as f:
         data = json.load(f)
 
-    generated, skipped = 0, 0
+    generated, skipped, out_of_scope = 0, 0, 0
     for r in data["results"]:
+        if changed_files is not None and r["path"] not in changed_files:
+            out_of_scope += 1
+            continue  # not in this PR's diff - don't spend a call on it
         if r.get("fix") or r["extra"].get("fix"):
             skipped += 1
             continue  # already has a native fix, don't waste a call
@@ -100,7 +107,8 @@ def main():
         json.dump(data, f, indent=2)
 
     mode = "DRY RUN" if dry_run else "LIVE"
-    print(f"[{mode}] model={model} generated {generated} remediation(s), {skipped} already had a native fix")
+    print(f"[{mode}] model={model} generated {generated} remediation(s), "
+          f"{skipped} already had a native fix, {out_of_scope} out of diff scope (skipped)")
     print(f"Wrote {out_path}")
 
 
