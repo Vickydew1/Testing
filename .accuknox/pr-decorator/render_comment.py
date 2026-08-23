@@ -63,23 +63,48 @@ def load_findings(path, changed_files=None):
     return findings, meta
 
 
+def bucket_category(f):
+    """Rough Bug vs Rule-violation split, mirroring Qodo's category badges.
+    Anything CWE-mapped or security/injection/secrets-flavored counts as a
+    real Bug; everything else (style, best-practice) is a Rule violation.
+    We don't detect "Requirement gaps" (PR-vs-ticket-intent mismatches) at
+    all yet - that badge always reads 0 until that capability exists."""
+    rid = f["rule_id"].lower()
+    if f["cwe"] or any(k in rid for k in ("injection", "secret", "xss", "csrf", "auth")):
+        return "bug"
+    return "rule_violation"
+
+
 def render_summary_comment(findings, meta):
     counts = Counter(f["severity"] for f in findings)
     total = len(findings)
-    banner = "\u274C Findings require attention" if counts.get("HIGH") else \
-             ("\u26A0\uFE0F Findings to review" if total else "\u2705 No findings")
+    bugs = sum(1 for f in findings if bucket_category(f) == "bug")
+    rule_violations = sum(1 for f in findings if bucket_category(f) == "rule_violation")
+    requirement_gaps = 0  # not a capability we have yet - see note in bucket_category
 
     lines = []
     lines.append("<!-- accuknox-pr-decorator:summary -->")
-    lines.append(f"## AccuKnox PR Decorator {banner}")
+    lines.append("## Code Review by AccuKnox")
     lines.append("")
-    lines.append(f"**{total}** finding(s) — "
-                  f"{counts.get('HIGH',0)} High, "
-                  f"{counts.get('MEDIUM',0)} Medium, "
-                  f"{counts.get('LOW',0)} Low")
+    lines.append(f"`\U0001F41B Bugs ({bugs})` `\U0001F4D8 Rule violations ({rule_violations})` "
+                  f"`\U0001F4CE Requirement gaps ({requirement_gaps})`")
     lines.append("")
-    lines.append(f"Scanned `{meta['ref']}` @ `{(meta['sha'] or '')[:10]}` "
-                  f"| AI analysis: {'on' if meta['ai_analysis'] else 'off'}")
+
+    if total == 0:
+        lines.append("Great, no issues found!")
+        lines.append("")
+        lines.append("AccuKnox reviewed your code and found no material issues that require review.")
+        lines.append("")
+        lines.append(f"_Scanned `{meta['ref']}` @ `{(meta['sha'] or '')[:10]}` "
+                      f"| AI analysis: {'on' if meta['ai_analysis'] else 'off'}_")
+        return "\n".join(lines)
+
+    banner = "\u274C Findings require attention" if counts.get("HIGH") else "\u26A0\uFE0F Findings to review"
+    lines.append(f"**{banner}** — {total} finding(s): "
+                  f"{counts.get('HIGH',0)} High, {counts.get('MEDIUM',0)} Medium, {counts.get('LOW',0)} Low")
+    lines.append("")
+    lines.append(f"_Scanned `{meta['ref']}` @ `{(meta['sha'] or '')[:10]}` "
+                  f"| AI analysis: {'on' if meta['ai_analysis'] else 'off'}_")
     lines.append("")
     lines.append("| Severity | File | Line | Rule |")
     lines.append("|---|---|---|---|")
