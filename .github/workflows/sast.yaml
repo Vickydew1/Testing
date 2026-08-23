@@ -1,4 +1,4 @@
-name: "AccuKnox SAST Scan"
+name: Accuknox SAST
 
 on:
   push:
@@ -8,19 +8,59 @@ on:
     branches:
       - main
 
+permissions:
+  pull-requests: write
+
 jobs:
-  sast-scan:
+  accuknox-cicd:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Run SAST Scan with AccuKnox
+      - name: "Run Accuknox SAST: Opengrep"
         uses: accuknox/sast-scan-opengrep-action@latest
         with:
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          accuknox_ai_analysis: "false"
           soft_fail: "true"
           severity: "HIGH"
-          
+
+      - name: Get changed files
+        if: github.event_name == 'pull_request'
+        id: diff
+        run: |
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | tr '\n' ',' | sed 's/,$//')
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "Changed files: $FILES"
+
+      - name: Locate result file
+        if: github.event_name == 'pull_request'
+        id: findfile
+        run: |
+          FOUND=$(find . -maxdepth 2 \( -name "results*.json" -o -name "*sast*.json" \) 2>/dev/null | head -1)
+          echo "path=$FOUND" >> "$GITHUB_OUTPUT"
+          echo "Found result file: $FOUND"
+          find . -maxdepth 2 -name "*.json"
+
+      - name: Generate remediation
+        if: github.event_name == 'pull_request'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python3 .accuknox/pr-decorator/generate_remediation.py "${{ steps.findfile.outputs.path }}" enriched.json
+
+      - name: Post PR Decorator review
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python3 .accuknox/pr-decorator/post_pr_review.py enriched.json \
+            --changed-files="${{ steps.diff.outputs.files }}" \
+            --mode=advisory
