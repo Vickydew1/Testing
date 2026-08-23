@@ -26,6 +26,7 @@ jobs:
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           accuknox_ai_analysis: "false"
           soft_fail: "true"
           severity: "HIGH"
@@ -52,7 +53,8 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
-          python3 .accuknox/pr-decorator/generate_remediation.py "${{ steps.findfile.outputs.path }}" enriched.json
+          python3 .accuknox/pr-decorator/generate_remediation.py "${{ steps.findfile.outputs.path }}" enriched.json \
+            --changed-files="${{ steps.diff.outputs.files }}"
 
       - name: Post PR Decorator review
         if: github.event_name == 'pull_request'
