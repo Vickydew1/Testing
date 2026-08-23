@@ -63,6 +63,11 @@ def load_findings(path, changed_files=None):
     return findings, meta
 
 
+FOOTER = ("\n---\n"
+          "🔷 **[AccuKnox ASPM](https://accuknox.com)** — AI-powered, security-first PR review "
+          "· [Docs](https://help.accuknox.com) · [Report an issue](https://github.com/accuknox)")
+
+
 def bucket_category(f):
     """Rough Bug vs Rule-violation split, mirroring Qodo's category badges.
     Anything CWE-mapped or security/injection/secrets-flavored counts as a
@@ -97,7 +102,7 @@ def render_summary_comment(findings, meta):
         lines.append("")
         lines.append(f"_Scanned `{meta['ref']}` @ `{(meta['sha'] or '')[:10]}` "
                       f"| AI analysis: {'on' if meta['ai_analysis'] else 'off'}_")
-        return "\n".join(lines)
+        return "\n".join(lines) + FOOTER
 
     banner = "\u274C Findings require attention" if counts.get("HIGH") else "\u26A0\uFE0F Findings to review"
     lines.append(f"**{banner}** — {total} finding(s): "
@@ -112,7 +117,7 @@ def render_summary_comment(findings, meta):
         lines.append(f"| {SEVERITY_ICON[f['severity']]} {f['severity']} "
                       f"| `{f['path']}` | {f['start_line']} "
                       f"| `{f['rule_id'].split('.')[-1]}` |")
-    return "\n".join(lines)
+    return "\n".join(lines) + FOOTER
 
 
 def render_inline_comment(f):
