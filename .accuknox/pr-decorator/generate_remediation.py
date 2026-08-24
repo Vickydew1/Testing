@@ -3,27 +3,27 @@
 Fills in a remediation suggestion for every finding that doesn't already
 have one (native OpenGrep `fix` covers ~10% of rules - the rest need this).
 
-Reads the same raw result file render_comment.py reads, calls Claude
-directly via the Anthropic Messages API once per finding lacking a native
-fix, and writes an enriched copy with a "remediation" field added under
-extra - which render_comment.py's loader already checks for
-(extra.remediation), so no changes needed downstream.
+Reads the same raw result file render_comment.py reads, calls an LLM via
+OpenRouter once per finding lacking a native fix, and writes an enriched
+copy with a "remediation" field added under extra - which render_comment.py's
+loader already checks for (extra.remediation), so no changes needed downstream.
 
 Usage:
-  ANTHROPIC_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --changed-files=a.js,b.js
-  ANTHROPIC_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --changed-files=a.js --model=claude-sonnet-4-5
+  OPENROUTER_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --changed-files=a.js,b.js
+  OPENROUTER_API_KEY=... python3 generate_remediation.py result.json result.enriched.json --changed-files=a.js --model=openai/gpt-4o-mini
 
 NOTE: not live-tested against the real API in this environment (no network
-access here) - the request shape matches the documented Anthropic Messages
-API, but run it once against a real key before wiring it into a pipeline.
+access here) - the request shape matches OpenRouter's documented OpenAI-
+compatible chat completions endpoint, but run it once against a real key
+before wiring it into a pipeline.
 """
 import json
 import os
 import sys
 import urllib.request
 
-API_URL = "https://api.anthropic.com/v1/messages"
-DEFAULT_MODEL = "claude-sonnet-4-5"
+API_URL = "https://openrouter.ai/api/v1/chat/completions"
+DEFAULT_MODEL = "openai/gpt-4o-mini"
 
 
 def build_prompt(result):
@@ -39,25 +39,26 @@ def build_prompt(result):
     )
 
 
-def call_claude(api_key, prompt, model):
+def call_openrouter(api_key, prompt, model):
     payload = {
         "model": model,
-        "max_tokens": 300,
         "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 300,
     }
     req = urllib.request.Request(
         API_URL,
         method="POST",
         data=json.dumps(payload).encode(),
         headers={
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/accuknox/pr-decorator",
+            "X-Title": "AccuKnox PR Decorator",
         },
     )
     with urllib.request.urlopen(req) as resp:
         data = json.loads(resp.read())
-    return data["content"][0]["text"].strip()
+    return data["choices"][0]["message"]["content"].strip()
 
 
 def main():
@@ -65,7 +66,7 @@ def main():
         print(__doc__)
         sys.exit(1)
     in_path, out_path = sys.argv[1], sys.argv[2]
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     model = DEFAULT_MODEL
     changed_files = None
     for arg in sys.argv[3:]:
@@ -83,17 +84,17 @@ def main():
     for r in data["results"]:
         if changed_files is not None and r["path"] not in changed_files:
             out_of_scope += 1
-            continue  # not in this PR's diff - don't spend a call on it
+            continue
         if r.get("fix") or r["extra"].get("fix"):
             skipped += 1
-            continue  # already has a native fix, don't waste a call
+            continue
         prompt = build_prompt(r)
         if dry_run:
-            r["extra"]["remediation"] = f"[DRY RUN - would call {model} via Anthropic API here]"
+            r["extra"]["remediation"] = f"[DRY RUN - would call {model} via OpenRouter here]"
             generated += 1
             continue
         try:
-            r["extra"]["remediation"] = call_claude(api_key, prompt, model)
+            r["extra"]["remediation"] = call_openrouter(api_key, prompt, model)
             generated += 1
         except Exception as e:
             r["extra"]["remediation"] = None
