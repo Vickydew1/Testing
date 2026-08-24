@@ -23,7 +23,7 @@ import sys
 import urllib.request
 
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "anthropic/claude-sonnet-4.5"  # any OpenRouter-listed model works
+DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"  # any OpenRouter-listed model works
 
 
 def build_prompt(result):
