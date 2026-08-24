@@ -48,8 +48,8 @@ jobs:
         run: |
           FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | tr '\n' ',' | sed 's/,$//')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
-          echo "Changed files: $FILES"\
-          
+          echo "Changed files: $FILES"
+
       - name: Locate result file
         if: github.event_name == 'pull_request'
         id: findfile
