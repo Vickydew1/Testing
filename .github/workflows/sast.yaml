@@ -33,12 +33,13 @@ jobs:
 
       - name: Install and run OCR quality check
         if: github.event_name == 'pull_request'
+        env:
+          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
+          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_LLM_MODEL: anthropic/claude-sonnet-4.5
+          OCR_USE_ANTHROPIC: "false"
         run: |
           npm install -g @alibaba-group/open-code-review
-          ocr config set llm.url https://openrouter.ai/api/v1/chat/completions
-          ocr config set llm.auth_token ${{ secrets.OPENROUTER_API_KEY }}
-          ocr config set llm.model anthropic/claude-sonnet-4.5
-          ocr config set llm.use_anthropic false
           ocr review --from ${{ github.event.pull_request.base.sha }} --to ${{ github.sha }} --format json > ocr_output.json
 
       - name: Get changed files
