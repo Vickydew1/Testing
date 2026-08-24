@@ -52,6 +52,7 @@ def load_findings(path, changed_files=None):
             "code": extra.get("lines", ""),
             "fingerprint": extra.get("fingerprint", ""),
             "fix": r.get("fix") or extra.get("fix") or extra.get("remediation"),
+            "source": extra.get("metadata", {}).get("source", "AccuKnox SAST"),
         })
     meta = {
         "repo": data.get("repo"),
@@ -61,6 +62,38 @@ def load_findings(path, changed_files=None):
         "ai_analysis": data.get("ai_analysis", False),
     }
     return findings, meta
+
+
+FOOTER = ("\n---\n"
+          "🔷 **[AccuKnox ASPM](https://accuknox.com)** — AI-powered, security-first PR review "
+          "· [Docs](https://help.accuknox.com) · [Report an issue](https://github.com/accuknox)")
+
+
+def render_quality_gate(findings, meta):
+    """SonarQube-style gate status block - display only, not wired to
+    actually block merge (per the advisory-only decision). 'Failed
+    conditions' currently means one thing: zero tolerance for new HIGH
+    findings. Extend this list if more conditions get defined later."""
+    high_count = sum(1 for f in findings if f["severity"] == "HIGH")
+    passed = high_count == 0
+
+    lines = []
+    lines.append(f"## Quality Gate {'\u2705 Passed' if passed else '\u274C Failed'}")
+    if not passed:
+        lines.append("")
+        lines.append("**Failed conditions**")
+        lines.append(f"- \U0001F534 High-Severity Findings on New Code "
+                      f"(required = 0, found {high_count})")
+    lines.append("")
+    console_url = meta.get("console_url")
+    if console_url:
+        lines.append(f"[See full analysis on AccuKnox Console]({console_url})")
+    else:
+        # No confirmed deep-link URL pattern exists yet for the AccuKnox
+        # console's per-PR findings view - this is the same gap flagged
+        # earlier as "Findings UI deep-link", still unbuilt.
+        lines.append("_Full analysis: AccuKnox Console findings deep-link not wired up yet._")
+    return "\n".join(lines)
 
 
 def bucket_category(f):
@@ -84,6 +117,10 @@ def render_summary_comment(findings, meta):
 
     lines = []
     lines.append("<!-- accuknox-pr-decorator:summary -->")
+    lines.append(render_quality_gate(findings, meta))
+    lines.append("")
+    lines.append("---")
+    lines.append("")
     lines.append("## Code Review by AccuKnox")
     lines.append("")
     lines.append(f"`\U0001F41B Bugs ({bugs})` `\U0001F4D8 Rule violations ({rule_violations})` "
@@ -97,7 +134,7 @@ def render_summary_comment(findings, meta):
         lines.append("")
         lines.append(f"_Scanned `{meta['ref']}` @ `{(meta['sha'] or '')[:10]}` "
                       f"| AI analysis: {'on' if meta['ai_analysis'] else 'off'}_")
-        return "\n".join(lines)
+        return "\n".join(lines) + FOOTER
 
     banner = "\u274C Findings require attention" if counts.get("HIGH") else "\u26A0\uFE0F Findings to review"
     lines.append(f"**{banner}** — {total} finding(s): "
@@ -106,13 +143,14 @@ def render_summary_comment(findings, meta):
     lines.append(f"_Scanned `{meta['ref']}` @ `{(meta['sha'] or '')[:10]}` "
                   f"| AI analysis: {'on' if meta['ai_analysis'] else 'off'}_")
     lines.append("")
-    lines.append("| Severity | File | Line | Rule |")
-    lines.append("|---|---|---|---|")
+    lines.append("| Severity | Source | File | Line | Rule |")
+    lines.append("|---|---|---|---|---|")
     for f in sorted(findings, key=lambda x: (-["LOW","MEDIUM","HIGH"].index(x["severity"]), x["path"])):
         lines.append(f"| {SEVERITY_ICON[f['severity']]} {f['severity']} "
+                      f"| {f['source']} "
                       f"| `{f['path']}` | {f['start_line']} "
                       f"| `{f['rule_id'].split('.')[-1]}` |")
-    return "\n".join(lines)
+    return "\n".join(lines) + FOOTER
 
 
 def render_inline_comment(f):
@@ -120,6 +158,7 @@ def render_inline_comment(f):
     lines.append(f"<!-- accuknox-pr-decorator:finding:{f['fingerprint']} -->")
     lines.append(f"{SEVERITY_ICON[f['severity']]} **{f['severity']}** "
                   f"— {f['rule_id'].split('.')[-1].replace('-', ' ')}")
+    lines.append(f"_Detected by {f['source']}_")
     lines.append("")
     lines.append(f["message"])
     if f["cwe"]:
