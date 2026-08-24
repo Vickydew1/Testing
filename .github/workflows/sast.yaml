@@ -31,14 +31,23 @@ jobs:
           soft_fail: "true"
           severity: "HIGH"
 
+      - name: Install and run OCR quality check
+        if: github.event_name == 'pull_request'
+        run: |
+          npm install -g @alibaba-group/open-code-review
+          ocr config set llm.url https://openrouter.ai/api/v1/chat/completions
+          ocr config set llm.auth_token ${{ secrets.OPENROUTER_API_KEY }}
+          ocr config set llm.model anthropic/claude-sonnet-4.5
+          ocr review --from ${{ github.event.pull_request.base.sha }} --to ${{ github.sha }} --format json > ocr_output.json
+
       - name: Get changed files
         if: github.event_name == 'pull_request'
         id: diff
         run: |
           FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | tr '\n' ',' | sed 's/,$//')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
-          echo "Changed files: $FILES"
-
+          echo "Changed files: $FILES"\
+          
       - name: Locate result file
         if: github.event_name == 'pull_request'
         id: findfile
@@ -46,7 +55,7 @@ jobs:
           FOUND=$(find . -maxdepth 2 \( -name "results*.json" -o -name "*sast*.json" \) 2>/dev/null | head -1)
           echo "path=$FOUND" >> "$GITHUB_OUTPUT"
           echo "Found result file: $FOUND"
-          find . -maxdepth 2 -name "*.json"
+          python3 .accuknox/pr-decorator/merge_ocr_findings.py "$FOUND" ocr_output.json "$FOUND"
 
       - name: Generate remediation
         if: github.event_name == 'pull_request'
