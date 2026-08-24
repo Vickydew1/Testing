@@ -36,7 +36,7 @@ jobs:
         env:
           OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
           OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
-          OCR_LLM_MODEL: anthropic/claude-sonnet-4.5
+          OCR_LLM_MODEL: meta-llama/llama-3.3-70b-instruct:free
           OCR_USE_ANTHROPIC: "false"
         run: |
           npm install -g @alibaba-group/open-code-review
