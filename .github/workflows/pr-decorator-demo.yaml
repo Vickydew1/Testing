@@ -1,0 +1,27 @@
+name: AccuKnox PR Decorator (demo)
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  scan-and-decorate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run AccuKnox scan + PR Decorator
+        uses: Vickydew1/Accuknox-Code-Analysis@add-pr-decorator
+        with:
+          scan_type: sast,iac,secret
+          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+          soft_fail: "true"
+          pr_decorator: "true"
+          llm_api_key: ${{ secrets.OPENROUTER_API_KEY }}
