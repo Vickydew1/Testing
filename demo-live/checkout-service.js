@@ -29,4 +29,14 @@ app.get("/export", (req, res) => {
     });
 });
 
+// Lookup order by user-controlled reference number
+app.get("/order-lookup", (req, res) => {
+    const ref = req.query.ref;
+    const query = "SELECT * FROM orders WHERE reference = '" + ref + "'";
+    db.query(query, (err, result) => {
+        if (err) res.send("Error");
+        res.json(result);
+    });
+});
+
 app.listen(3003, () => console.log("Checkout service running"));
