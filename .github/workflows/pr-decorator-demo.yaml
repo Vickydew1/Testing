@@ -24,4 +24,6 @@ jobs:
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
           soft_fail: "true"
           pr_decorator: "true"
-          llm_api_key: ${{ secrets.OPENROUTER_API_KEY }}
+          # llm_api_key omitted for the demo - OPENROUTER_API_KEY in this
+          # repo isn't a valid key (401s), and remediation isn't needed to
+          # show the core feature. Re-add once that secret is fixed.
