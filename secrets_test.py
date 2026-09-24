@@ -17,4 +17,7 @@ GITHUB_TOKEN = "ghp_aBcD1234EfGh5678IjKl9012MnOp3456QrSt"
 # Generic high-entropy string TruffleHog also flags
 API_KEY = "f8b3c7a9d2e1f4b6c8a0e3d5f7b9c2a4e6d8f0b2c4a6e8d0f2b4c6a8e0d2f4b6"
 
+# Added for the PR Decorator demo
+DEMO_DB_PASSWORD = "Sup3rSecretPr0dPassw0rd!2026"
+
 print("This file contains fake hardcoded secrets for testing only.")
