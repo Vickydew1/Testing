@@ -18,7 +18,7 @@ jobs:
       - name: Run AccuKnox scan + PR Decorator
         uses: Vickydew1/Accuknox-Code-Analysis@add-pr-decorator
         with:
-          scan_type: sast,iac,secret
+          scan_type: sast,sca,iac,secret
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
