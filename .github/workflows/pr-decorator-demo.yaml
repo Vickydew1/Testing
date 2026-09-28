@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run AccuKnox scan + PR Decorator
-        uses: Vickydew1/Accuknox-Code-Analysis@add-pr-decorator
+uses: Vickydew1/Accuknox-Code-Analysis@<commit-sha>
         with:
           scan_type: sast,sca,iac,secret
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
