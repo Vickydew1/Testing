@@ -15,16 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Posts the review as your GitHub App bot. Falls back to the default
-      # github-actions[bot] token if the App secrets are not set yet.
-      - name: Get bot token
-        id: app-token
-        continue-on-error: true
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
       - name: Run AccuKnox scan + PR Decorator
         uses: Vickydew1/Accuknox-Code-Analysis@add-pr-decorator
         with:
@@ -35,4 +25,3 @@ jobs:
           soft_fail: "true"
           pr_decorator: "true"
           llm_api_key: ${{ secrets.OPENROUTER_API_KEY }}
-          github_token: ${{ steps.app-token.outputs.token || github.token }}
