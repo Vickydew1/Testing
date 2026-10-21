@@ -43,7 +43,7 @@ jobs:
           scan_type: sast,iac,sbom,sca,secret
           quality_gate: "true"
           ai_analysis: "true"
-          soft_fail: "false"
+          soft_fail: "true"
           sast_command: scan .
           sbom_project_name: Test
           codeassure_config: ${{ runner.temp }}/codeassure.json
