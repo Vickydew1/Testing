@@ -10,18 +10,34 @@ permissions:
 jobs:
   scan:
     runs-on: ubuntu-latest
+    env:
+      CODEASSURE_MODEL_PROVIDER: openai
+      CODEASSURE_MODEL_NAME: z-ai/glm-5.3-flash
+      CODEASSURE_API_BASE: https://openrouter.ai/api
+      CODEASSURE_API_KEY: ${{ secrets.CODEASSURE_API_KEY }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: Write CodeAssure config
+        run: |
+          cat > "$RUNNER_TEMP/codeassure.json" <<'EOF'
+          {
+            "model": {
+              "provider": "$CODEASSURE_MODEL_PROVIDER",
+              "name": "$CODEASSURE_MODEL_NAME",
+              "api_base": "$CODEASSURE_API_BASE",
+              "api_key": "$CODEASSURE_API_KEY",
+              "tool_calling": true
+            },
+            "concurrency": 4
+          }
+          EOF
+          echo "CODEASSURE_CONFIG=$RUNNER_TEMP/codeassure.json" >> "$GITHUB_ENV"
+
       - name: AccuKnox pipeline
         uses: Vickydew1/Accuknox-Code-Analysis@feat/pipeline-binary-packaging-test
-        env:
-          CODEASSURE_MODEL_PROVIDER: openai
-          CODEASSURE_MODEL_NAME: z-ai/glm-5.3-flash
-          CODEASSURE_API_BASE: https://openrouter.ai/api
-          CODEASSURE_API_KEY: ${{ secrets.CODEASSURE_API_KEY }}
         with:
           pipeline: "true"
           scan_type: sast,iac,sbom,sca,secret
@@ -30,6 +46,11 @@ jobs:
           soft_fail: "false"
           sast_command: scan .
           sbom_project_name: Test
+          codeassure_config: ${{ runner.temp }}/codeassure.json
+          codeassure_model_provider: ${{ env.CODEASSURE_MODEL_PROVIDER }}
+          codeassure_model_name: ${{ env.CODEASSURE_MODEL_NAME }}
+          codeassure_api_base: ${{ env.CODEASSURE_API_BASE }}
+          codeassure_api_key: ${{ env.CODEASSURE_API_KEY }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
