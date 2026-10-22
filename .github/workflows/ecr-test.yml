@@ -1,79 +1,79 @@
-name: ECR Image Scan (ASPM)
+# name: ECR Image Scan (ASPM)
 
-on:
-  repository_dispatch:
-    types: [ecr-image-push]
+# on:
+#   repository_dispatch:
+#     types: [ecr-image-push]
 
-jobs:
-  container-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
+# jobs:
+#   container-scan:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 40
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
 
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:            ${{ github.event.client_payload.region }}
+#       - name: Configure AWS
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region:            ${{ github.event.client_payload.region }}
 
-      - name: Login to ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+#       - name: Login to ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Validate payload
-        run: |
-          if [ -z "${{ github.event.client_payload.image_url }}" ]; then
-            echo "Missing image_url"
-            exit 1
-          fi
+#       - name: Validate payload
+#         run: |
+#           if [ -z "${{ github.event.client_payload.image_url }}" ]; then
+#             echo "Missing image_url"
+#             exit 1
+#           fi
 
-      - name: Print ECR details
-        run: |
-          echo "Repository : ${{ github.event.client_payload.repository_name }}"
-          echo "Tag        : ${{ github.event.client_payload.image_tag }}"
-          echo "Digest     : ${{ github.event.client_payload.image_digest }}"
-          echo "Image URL  : ${{ github.event.client_payload.image_url }}"
+#       - name: Print ECR details
+#         run: |
+#           echo "Repository : ${{ github.event.client_payload.repository_name }}"
+#           echo "Tag        : ${{ github.event.client_payload.image_tag }}"
+#           echo "Digest     : ${{ github.event.client_payload.image_digest }}"
+#           echo "Image URL  : ${{ github.event.client_payload.image_url }}"
 
-      - name: Pull image from ECR
-        run: |
-          docker pull ${{ github.event.client_payload.image_url }}
+#       - name: Pull image from ECR
+#         run: |
+#           docker pull ${{ github.event.client_payload.image_url }}
 
-      - name: Download ASPM Scanner
-        run: |
-          curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.0/accuknox-aspm-scanner -o accuknox-aspm-scanner
-          chmod +x accuknox-aspm-scanner
+#       - name: Download ASPM Scanner
+#         run: |
+#           curl -L https://github.com/accuknox/aspm-scanner-cli/releases/download/v0.14.0/accuknox-aspm-scanner -o accuknox-aspm-scanner
+#           chmod +x accuknox-aspm-scanner
 
-      - name: Install scanner
-        run: |
-          ./accuknox-aspm-scanner tool install --type container
+#       - name: Install scanner
+#         run: |
+#           ./accuknox-aspm-scanner tool install --type container
 
-      - name: Scan image
-        env:
-          ACCUKNOX_TOKEN: ${{ secrets.ACCUKNOX_TOKEN }}
-          ACCUKNOX_LABEL: ${{ secrets.ACCUKNOX_LABEL }}
-          ACCUKNOX_ENDPOINT: ${{ secrets.ACCUKNOX_ENDPOINT }}
-        run: |
-          set -e
+#       - name: Scan image
+#         env:
+#           ACCUKNOX_TOKEN: ${{ secrets.ACCUKNOX_TOKEN }}
+#           ACCUKNOX_LABEL: ${{ secrets.ACCUKNOX_LABEL }}
+#           ACCUKNOX_ENDPOINT: ${{ secrets.ACCUKNOX_ENDPOINT }}
+#         run: |
+#           set -e
 
-          IMAGE="${{ github.event.client_payload.image_url }}"
+#           IMAGE="${{ github.event.client_payload.image_url }}"
 
-          echo "Scanning $IMAGE"
+#           echo "Scanning $IMAGE"
 
-          ./accuknox-aspm-scanner scan \
-            --softfail \
-            container \
-            --command "image $IMAGE --severity CRITICAL,HIGH" \
-            --container-mode
+#           ./accuknox-aspm-scanner scan \
+#             --softfail \
+#             container \
+#             --command "image $IMAGE --severity CRITICAL,HIGH" \
+#             --container-mode
 
-      - name: Scan passed
-        if: success()
-        run: echo "✅ Scan completed successfully!"
+#       - name: Scan passed
+#         if: success()
+#         run: echo "✅ Scan completed successfully!"
 
     
-      - name: Scan failed
-        if: failure()
-        run: echo "❌ Scan failed!"
+#       - name: Scan failed
+#         if: failure()
+#         run: echo "❌ Scan failed!"
