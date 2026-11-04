@@ -1,74 +1,111 @@
-name: AccuKnox Security Scan
+# name: AccuKnox Security Scan
+
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+
+# jobs:
+#   sast-scan:
+#     name: SAST Scan (Opengrep)
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Run AccuKnox SAST
+#         uses: accuknox/sast-scan-opengrep-action@latest
+#         with:
+#           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+#           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+#           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+#           accuknox_ai_analysis: "false"
+#           soft_fail: "true"
+
+#   iac-scan:
+#     name: IaC Scan
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Run AccuKnox IaC Scan
+#         uses: accuknox/iac-scan-action@latest
+#         with:
+#           soft_fail: true
+#           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+#           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+#           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+
+#   secret-scan:
+#     name: Secret Scan
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Run AccuKnox Secret Scan
+#         uses: accuknox/secret-scan-action@latest
+#         with:
+#           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+#           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+#           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+#           soft_fail: true
+
+#   dast-scan:
+#     name: DAST Scan
+#     runs-on: ubuntu-latest
+#     # DAST runs only on push to main, not on PRs
+#     if: github.event_name == 'push'
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Run AccuKnox DAST Scan
+#         uses: accuknox/dast-scan-action@latest
+#         with:
+#           target_url: "http://testphp.vulnweb.com"
+#           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
+#           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
+#           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
+#           dast_scan_type: "full-scan"
+
+name: AccuKnox Code Analysis Workflow
 
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
-  sast-scan:
-    name: SAST Scan (Opengrep)
+  code-analysis:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7.0.0
 
-      - name: Run AccuKnox SAST
-        uses: accuknox/sast-scan-opengrep-action@latest
+      - name: Run AccuKnox Code Analysis
+        uses: VanishaParwal/Accuknox-Code-Analysis@main
         with:
-          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
-          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          accuknox_ai_analysis: "false"
-          soft_fail: "true"
+          # Pick any combination of scans
+          scan_type: "sast, sca, secret, iac, ml, api-discovery, sbom"
 
-  iac-scan:
-    name: IaC Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Run AccuKnox IaC Scan
-        uses: accuknox/iac-scan-action@latest
-        with:
-          soft_fail: true
+          # AccuKnox credentials
           accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
           accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
           accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
 
-  secret-scan:
-    name: Secret Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+          # Common options
+          soft_fail: true            # Continue the pipeline on findings
+          upload_artifact: true      # Upload kept result files as an artifact
 
-      - name: Run AccuKnox Secret Scan
-        uses: accuknox/secret-scan-action@latest
-        with:
-          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
-          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          soft_fail: true
-
-  dast-scan:
-    name: DAST Scan
-    runs-on: ubuntu-latest
-    # DAST runs only on push to main, not on PRs
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Run AccuKnox DAST Scan
-        uses: accuknox/dast-scan-action@latest
-        with:
-          target_url: "http://testphp.vulnweb.com"
-          accuknox_endpoint: ${{ secrets.ACCUKNOX_ENDPOINT }}
-          accuknox_token: ${{ secrets.ACCUKNOX_TOKEN }}
-          accuknox_label: ${{ secrets.ACCUKNOX_LABEL }}
-          dast_scan_type: "full-scan"
+          # SBOM – image or filesystem (project_name required)
+          sbom_scan_type: "image"
+          sbom_image_ref: "myapp:latest"
+          sbom_project_name: "my-project"
