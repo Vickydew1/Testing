@@ -78,10 +78,10 @@ name: AccuKnox Code Analysis Workflow
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   code-analysis:
