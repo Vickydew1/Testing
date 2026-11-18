@@ -8,3 +8,8 @@ app.get("/", (req, res) => {
 });
 
 app.listen(3004, () => console.log("XSS vulnerable app running"));
+
+
+
+
+
