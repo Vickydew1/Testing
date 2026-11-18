@@ -22,8 +22,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set Sonar project key
+        run: echo "SONAR_KEY=Tible-$(echo '${{ github.ref_name }}' | tr '/' '-')" >> "$GITHUB_ENV"
+
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@v4
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_KEY }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
